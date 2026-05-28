@@ -1,0 +1,210 @@
+/* Blue Ocean Theme Variables */
+:root {
+  --ocean-50: #f0f9ff;
+  --ocean-100: #e0f2fe;
+  --ocean-200: #bae6fd;
+  --ocean-300: #7dd3fc;
+  --ocean-400: #38bdf8;
+  --ocean-500: #0ea5e9;
+  --ocean-600: #0284c7;
+  --ocean-700: #0369a1;
+  --ocean-800: #075985;
+  --ocean-900: #0c4a6e;
+  --ocean-950: #082f49;
+}
+
+/* Custom Ocean Theme Classes */
+.bg-ocean-50 { background-color: var(--ocean-50); }
+.bg-ocean-100 { background-color: var(--ocean-100); }
+.bg-ocean-200 { background-color: var(--ocean-200); }
+.bg-ocean-300 { background-color: var(--ocean-300); }
+.bg-ocean-400 { background-color: var(--ocean-400); }
+.bg-ocean-500 { background-color: var(--ocean-500); }
+.bg-ocean-600 { background-color: var(--ocean-600); }
+.bg-ocean-700 { background-color: var(--ocean-700); }
+.bg-ocean-800 { background-color: var(--ocean-800); }
+.bg-ocean-900 { background-color: var(--ocean-900); }
+
+.text-ocean-50 { color: var(--ocean-50); }
+.text-ocean-100 { color: var(--ocean-100); }
+.text-ocean-200 { color: var(--ocean-200); }
+.text-ocean-300 { color: var(--ocean-300); }
+.text-ocean-400 { color: var(--ocean-400); }
+.text-ocean-500 { color: var(--ocean-500); }
+.text-ocean-600 { color: var(--ocean-600); }
+.text-ocean-700 { color: var(--ocean-700); }
+.text-ocean-800 { color: var(--ocean-800); }
+.text-ocean-900 { color: var(--ocean-900); }
+
+.border-ocean-100 { border-color: var(--ocean-100); }
+.border-ocean-200 { border-color: var(--ocean-200); }
+.border-ocean-300 { border-color: var(--ocean-300); }
+.border-ocean-500 { border-color: var(--ocean-500); }
+.border-ocean-600 { border-color: var(--ocean-600); }
+
+/* Ocean Wave Animation */
+@keyframes ocean-wave {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(180deg); }
+}
+
+.ocean-wave {
+  animation: ocean-wave 3s ease-in-out infinite;
+}
+
+/* Glassmorphism Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(14, 165, 233, 0.1);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(14, 165, 233, 0.1);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.glass-card:hover {
+  box-shadow: 0 4px 12px 0 rgba(14, 165, 233, 0.15);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ocean-50);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ocean-300);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ocean-400);
+}
+
+/* Button Styles */
+.btn-ocean {
+  background: linear-gradient(135deg, var(--ocean-500), var(--ocean-600));
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-ocean:hover {
+  background: linear-gradient(135deg, var(--ocean-600), var(--ocean-700));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.btn-ocean-outline {
+  background: transparent;
+  color: var(--ocean-600);
+  border: 2px solid var(--ocean-600);
+  transition: all 0.3s ease;
+}
+
+.btn-ocean-outline:hover {
+  background: var(--ocean-600);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Card Hover Effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(14, 165, 233, 0.15);
+}
+
+/* Navigation Active State */
+.nav-active {
+  background: linear-gradient(135deg, var(--ocean-500), var(--ocean-600));
+  color: white;
+}
+
+.nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: white;
+}
+
+/* Form Styles */
+.form-input {
+  border: 2px solid var(--ocean-200);
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  border-color: var(--ocean-500);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* Ocean Gradient Backgrounds */
+.bg-ocean-gradient {
+  background: linear-gradient(135deg, var(--ocean-400), var(--ocean-600));
+}
+
+.bg-ocean-gradient-light {
+  background: linear-gradient(135deg, var(--ocean-50), var(--ocean-100));
+}
+
+/* Status Badges */
+.status-active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.status-pending {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.status-inactive {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+}
+
+/* Loading Animation */
+.loading-wave {
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: var(--ocean-500);
+  margin: 0 1px;
+  animation: loading-wave 1.2s infinite ease-in-out;
+}
+
+.loading-wave:nth-child(2) { animation-delay: -1.1s; }
+.loading-wave:nth-child(3) { animation-delay: -1.0s; }
+.loading-wave:nth-child(4) { animation-delay: -0.9s; }
+
+@keyframes loading-wave {
+  0%, 40%, 100% { transform: scaleY(0.4); }
+  20% { transform: scaleY(1.0); }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

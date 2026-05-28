@@ -1,0 +1,313 @@
+Absolutely—here’s a staged Windsurf prompt pack that (1) walks through every bug in your testing doc, (2) adds the full department/program list to **Point 11**, and (3) explains and enforces proper **placeholder** behavior. I’ve grouped fixes by screen/module and given concrete acceptance criteria. I also referenced the exact line items from your doc so Windsurf can verify against the source list.
+
+Quick note on your questions:
+
+* **“Point 11”** refers to Registration – 2nd page → “Degree obtained – must enter only B.E., B.Sc., B.Com., etc. (Place Holder)”&#x20;
+* **What “placeholder” means:** it’s hint text shown inside an empty input (e.g., “Select your program”). It’s not a valid value, must be disabled/unselectable, and must not be saved to the database if the user doesn’t make a real selection.
+
+Below are paste-ready stage prompts. Run them in order inside Windsurf. Each stage includes scope, implementation tasks, and acceptance tests.
+
+---
+
+# Stage 0 — Bootstrap & Safety Net (Repo-wide)
+
+**Prompt to paste in Windsurf:**
+
+You are a senior full-stack pair-programmer fixing the AMET Alumni app.
+Goal: Resolve all bugs listed in “Alumni Portal Testing Report-1 (21.08.2025)”, grouped by modules. Use feature scope strictly within: User Management & Profiles, Alumni Directory & Search, Event Management, Job Portal, Networking & Mentorship (messaging/groups), Administration Tools, UI/UX & Accessibility, Social integration.
+
+**Do first:**
+
+1. Create a new branch `bugfix/test-report-1-2025-08-21`.
+2. Run app locally, capture console and network errors. Add a temporary “QA Toggles” log banner (dev-only) to surface page, auth role, and API endpoint on each view for testability.
+3. Add unit/integration tests where missing (React Testing Library) and PostgREST/Supabase RPC tests for backend functions.
+4. For each stage below: implement fixes, add/adjust tests, run lints, and commit with `feat/fix/test` split.
+5. Do not introduce new features beyond the listed modules.
+
+**Bug source references for Windsurf to keep open:**
+
+* Registration pages (Points **1–13**)  &#x20;
+* Profile Settings (Points **14–20**)&#x20;
+* Alumni Directory & Events (Points **21–24**)&#x20;
+* Admin/Role/Messaging (Points **25–27**)&#x20;
+* Jobs Portal (Points **28–36**, **38–43**) &#x20;
+* Admin Settings (Points **44–49**)&#x20;
+* Home, Mentor, Groups (Points **50–52**)&#x20;
+
+For role/visibility/RLS checks during fixes, cross-verify with the Supabase policy snapshot (25 Aug) where relevant (e.g., jobs visibility, groups, events).  &#x20;
+
+---
+
+# Stage 1 — Registration: Page 1 (Points 1–6)
+
+**Scope:**
+
+1. Google sign-in → “access denied” (Point 1).
+2. First/last name validation (caps only; no digits/specials; space allowed) (Point 2).
+3. Email must be lowercase; clarify `.co` requirement per spec (Point 3).
+4. Phone: only digits + leading `+` allowed (Point 4).
+5. Disable copy-paste into “confirm password” (Point 5).
+6. Role selection impacts Page 3 options (alumni/student/employer/mentor mapping) (Point 6).&#x20;
+
+**Do:**
+
+* Auth: On Google OAuth callback, ensure Supabase Auth → profile bootstrap → RLS session claims set. Redirect to onboarding, not protected route.
+* Add Zod/Yup schema enforcing above rules (front-end) + server-side checks before insert.
+* Role→Page-3 mapping: show only allowed categories per selection.
+
+**Accept when:**
+
+* OAuth returns to correct route w/o 403.
+* Invalid names/emails/phones blocked with inline errors.
+* Confirm password cannot be pasted.
+* Page-3 shows only allowed categories per chosen role.
+
+---
+
+# Stage 2 — Registration: Page 2 (Points 7–11) + Department list insertion
+
+**Scope:**
+7\) AMET logo on Page 2 shouldn’t kick to Home during onboarding (Point 7).
+8\) Replace mismatched AMET logo (color accurate) (Point 8).
+9\) LinkedIn field must accept only valid URLs, not emails (Point 9).
+10\) Terms/Privacy links wired (Point 10).
+11\) **Degree obtained** must be constrained to allowed programs; **placeholder** is hint only, not a saved value (Point 11).&#x20;
+
+**Do:**
+
+* Lock onboarding route, disable brand link during onboarding or open in new tab.
+* Replace asset for AMET logo; verify contrast.
+* LinkedIn validation: must start with `https://` and domain allow-list (`linkedin.com/...`).
+* Wire Terms/Privacy routes.
+* Degree obtained: convert to **required Select** with disabled placeholder option “Select your program”. Populate exact options below.
+
+**Use this exact option set (programs/departments) for Point 11:**
+
+* **Undergraduate/Cert/Diploma:**
+  HND Marine; HND Nautical Science; B.E. Petroleum Engineering; B.E. Mining Engineering; B.Sc. Nautical Science; B.E. Marine Engineering; B.E. Marine Technology; B.E. Naval Architecture and Offshore Engineering; B.E. Mechanical Engineering; B.E. Electrical and Electronics Engineering – Marine; B.Com; B.B.A. Shipping & Logistics; Electro Technical Officers (ETO); Graduate Marine Engineering (GME); GP Rating
+* **P.G. Programmes:**
+  M.B.A. Shipping & Logistics Management; M.E. Naval Architecture and Offshore Engineering; M.E. Petroleum Engineering; M.E. Power Systems; M.E. Marine Engineering
+* **Ph.D. Programmes:**
+  B.Sc. Nautical Science; B.E. Marine Engineering
+* **(Also listed further down in your note):**
+  HND Nautical Science; HND Marine Engineering; MBA – Shipping and Logistics Management; B.E. Naval Architecture and Offshore Engineering; B.E. Marine Technology; B.E. Electrical and Electronics Engineering – Marine; B.E. Harbour Engineer
+
+**Placeholder rule:** Placeholder must be disabled/unselectable; form should fail submit if the user doesn’t choose a real option.
+
+**Accept when:**
+
+* Brand click doesn’t drop onboarding state.
+* Logo looks correct.
+* LinkedIn rejects non-URLs/emails and accepts valid profiles.
+* Terms/Privacy open correct pages.
+* Degree field saves a valid value from the above list; placeholder never saved.
+
+---
+
+# Stage 3 — Registration: Page 3 (Points 12–13)
+
+**Scope:**
+12\) Mentor skills UI height inconsistent (Point 12).
+13\) Checking Terms/Policy box then clicking “Previous” must not auto-complete registration (Point 13).&#x20;
+
+**Do:**
+
+* Normalize tag/textarea components; set min/max heights.
+* Fix navigation state: prevent unintended form auto-submit; ensure dirty state preserved without finalizing account.
+
+**Accept when:**
+
+* UI controls render uniform.
+* Navigating back never auto-creates the account.
+
+---
+
+# Stage 4 — Profile Settings (Points 14–20)
+
+**Scope:**
+14\) Degree from registration not visible in profile (Point 14).
+15\) “Brief me” from registration not visible (Point 15).
+16\) Skills input: support comma/space tokenization (Point 16).
+17\) Achievements error on save (Point 17).
+18\) LinkedIn from registration not visible (Point 18).
+19\) Social links lost when navigating back/new tab (Point 19).
+20\) Social links accept invalid http text across fields (needs per-field validation) (Point 20).&#x20;
+
+**Do:**
+
+* Ensure registration payload maps to profile columns; add migrations if missing (jsonb arrays for `skills`, `achievements`, etc.).
+* Tokenize skills on comma/space; store as jsonb list.
+* Fix achievements save type (text\[] vs jsonb) mismatch; cast consistently.
+* Persist form state via React state + URL/keyed cache; warn on unsaved changes.
+* Validate each social field: LinkedIn, GitHub, Website with domain allow-lists.
+
+**Accept when:**
+
+* All listed fields round-trip from registration → profile.
+* No crashes on achievements.
+* Social links validate correctly; data not lost on navigation.
+
+---
+
+# Stage 5 — Alumni Directory & Access (Points 21–22, 25)
+
+**Scope:**
+21\) Show profiles only after Admin approval (Point 21).
+22\) Ensure only Admin-approved alumni are listed (Point 22).
+25\) Alumni→Admin conversion not working properly (Point 25). &#x20;
+
+**Do:**
+
+* Add `is_approved` and/or `approval_status` checks to directory query (back-end filter + front-end guard).
+* Admin UI: approve/unapprove action updates the field.
+* Role elevation flow: ensure transactional update of roles table + profile flags; update JWT or session after role change so UI reflects Admin.
+
+**Accept when:**
+
+* Non-approved users never appear.
+* Approvals instantly reflect in directory.
+* Promoting a user to Admin persists and UI updates without re-login.
+
+---
+
+# Stage 6 — Events (Points 23–24)
+
+**Scope:**
+23\) Define who can create events (Mentor/Alumni/Employer/Mentee), enforce with RLS/role checks (Point 23).
+24\) Creating an event must send a notification to Admin (Bell, Messaging) (Point 24).&#x20;
+
+**Do:**
+
+* Implement role allow-list for event creation; verify RLS + client guard. (See events policies for reference.)&#x20;
+* On successful create, insert a notification row for Admin(s) and surface it in the bell; also send a message or inbox item if required.
+
+**Accept when:**
+
+* Disallowed roles cannot create events.
+* Admin bell shows a new notification on event creation.
+
+---
+
+# Stage 7 — Employer Dashboard & Messaging (Points 26–27)
+
+**Scope:**
+26\) Employer login → Dashboard shows Profile Settings incorrectly (Point 26).
+27\) Sending a message shows double entries; receiver’s double disappears after viewing (Point 27).&#x20;
+
+**Do:**
+
+* Fix role-based routing/layout: Employers land on Employer dashboard, not profile settings.
+* Deduplicate messaging inserts (prevent double client dispatch and double server insert). Enforce unique(idempotent) key per message UUID.
+
+**Accept when:**
+
+* Employer lands on the correct dashboard.
+* Messages appear once for sender/receiver consistently.
+
+---
+
+# Stage 8 — Jobs Portal (Points 28–36, 38–43)
+
+**Scope:**
+28\) Job appears only after Admin approves (Point 28).
+29\) Uploaded job cannot be deleted (owner/admin should be able) (Point 29).
+30\) Clarify who can post (Admin, Mentor, Employer) and enforce (Point 30).
+31\) Jobs search requires Enter; change to instant search like Alumni Directory (Point 31).
+32\) Jobs Filter button not working (Point 32).
+33\) Back button missing (Point 33).
+34\) Alignment/theme issues (Point 34).
+35\) Job Edit → Requirements bullets misaligned (Point 35).
+36\) Why show “Upload Resume” to Job Poster (hide for posters) (Point 36).
+— New Job Creation:
+38\) Front card should not show Photos/Salary/Any Level (clarify data source) (Point 38).
+39\) Rename “Requirements” → “Qualification” everywhere (Point 39).
+40\) Student Job View: Deadline missing (Point 40).
+41\) Job Overview: Industry/Department/Experience Level not displayed (Point 41).
+42\) Upload Resume error (Point 42).
+43\) Apply Job error (Point 43). &#x20;
+
+**Do:**
+
+* Enforce “approved && active” visibility on list query; confirm against policy (public can view approved & active).&#x20;
+* Implement delete for owners/admin; fix RLS or server handler as needed.
+* Role checks on “Create Job” button & API.
+* Instant search: debounce 250ms onChange; unify with directory search util.
+* Wire filter panel; ensure query params reflect filter state.
+* Add a visible back button consistent with app shell.
+* Fix layout CSS; normalize card heights and spacing.
+* Change label “Requirements”→“Qualification” across form, DB field alias, and UI text.
+* Show `deadline` on student view; wire missing fields industry/department/experience.
+* Hide “Upload Resume” for posters (condition on role or job ownership).
+* Fix resume upload path & storage policy; verify user can upload their own resume only. (Check `user_resumes`/storage policies.)&#x20;
+* Fix “Apply Job” action (RLS on `job_applications`: applicants can insert; employers see theirs). &#x20;
+
+**Accept when:**
+
+* Only approved+active jobs are listed; search/filter update results in real time.
+* Owners/admin can delete their job; posters don’t see resume uploader.
+* Labels updated; bullets aligned; theme/layout tidy.
+* Students can upload resume & apply without errors; deadline/overview fields visible.
+
+---
+
+# Stage 9 — Admin Settings: User Management (Points 44–49)
+
+**Scope:**
+44\) “User last login” not displayed (Point 44).
+45\) Rejected user shows support email typo → change to alumni address (Point 45).
+46\) How to delete created job (ensure admin can) (Point 46).
+47\) Super Admin not revoked (Point 47).
+48\) User not removed permanently (Point 48).
+49\) Auto-group users into their Batch Group after registration (Point 49).&#x20;
+
+**Do:**
+
+* Surface `last_sign_in_at` (or auth metadata) in Admin grid.
+* Update rejection message/email to `Alumni@ametuniv.ac.in`.
+* Admin delete job path (server + RLS).
+* Add “revoke super\_admin” action gated to existing super\_admin; update roles + session refresh.
+* “Remove permanently” = soft delete + anonymize or hard delete per policy, with audit trail in admin logs.
+* On verified registration, enqueue a server function to attach user to their Batch Group (by grad year/department).
+
+**Accept when:**
+
+* Admin UI shows last login.
+* Rejections show corrected email.
+* Admin can delete jobs; super\_admin can be revoked; users removable per policy.
+* New verified alumni appear in their batch group automatically.
+
+---
+
+# Stage 10 — Home, Mentor, Groups (Points 50–52)
+
+**Scope:**
+50\) Home → About, Quick links, Job Board broken links (Point 50).&#x20;
+51\) Creating a mentor program as a mentor errors out (Point 51).&#x20;
+52\) Groups: Created successfully, but other users see “Access Denied” (Point 52).&#x20;
+
+**Do:**
+
+* Fix routing/anchors for Home menu cards.
+* Mentor program creation: verify payload shape and RLS on mentorship tables; ensure mentor can create their own program. (See mentor policy refs in snapshot.)&#x20;
+* Groups visibility: ensure public groups are visible to all; private groups only to members; fix RLS filters and front-end guards accordingly.&#x20;
+
+**Accept when:**
+
+* All home links work.
+* Mentors can create programs without errors.
+* Public groups visible to everyone; private groups only to members.
+
+---
+
+# Finalization
+
+**Prompt to paste in Windsurf after completing Stage 10:**
+
+* Run full test suite; ensure no regressions.
+* Produce a short “Fix Log” markdown summarizing each point number, the file(s) changed, and test coverage added.
+* Open a PR `PR: fix(test-report-1) — 52 issues resolved` with checklists tied to points **1–52**.
+* Provide a demo script (steps + test users per role) that validates each acceptance criterion.
+
+---
+
+If you want, I can also turn the Stage prompts into PR templates/checklists so each commit clearly maps to the point numbers.

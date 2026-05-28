@@ -1,0 +1,1 @@
+import { supabase } from './src/utils/supabase'; async function checkEvents() { const { data, error } = await supabase.from('events').select('*'); console.log('All events in DB:', data); console.log('Error if any:', error); } checkEvents();

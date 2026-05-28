@@ -1,0 +1,24 @@
+/* react-big-calendar overlay overrides to better match MUI Paper styling */
+.rbc-overlay {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.rbc-overlay-header {
+  font-weight: 600;
+  padding: 4px 8px 8px;
+  margin: -4px -8px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.rbc-overlay .rbc-event {
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.rbc-overlay .rbc-event:last-child {
+  margin-bottom: 0;
+}

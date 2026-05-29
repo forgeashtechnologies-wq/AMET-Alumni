@@ -1,4 +1,4 @@
-# AMET Alumni Portal
+# AMET Alumni Management Platform
 
 A comprehensive alumni engagement platform for AMET University, built with React 18, Supabase PostgreSQL, and Deno Edge Functions.
 
@@ -8,8 +8,8 @@ A comprehensive alumni engagement platform for AMET University, built with React
 
 | Category | Detail |
 |----------|--------|
-| **Status** | Production-ready |
-| **Uptime** | 5+ months, zero critical incidents |
+| **Status** | Active in production and prepared for handover review |
+| **Uptime** | Based on available handover records, no unresolved critical handover blockers are reported as of the handover date |
 | **Users** | 5 roles across 10 modules |
 | **Features** | 74 delivered |
 | **Database** | 105 tables, 559 functions, 404 RLS policies |
@@ -67,7 +67,7 @@ Supabase (Backend)
 ├── Storage (Files & Media)
 ├── Edge Functions (Deno)
 │   ├── event-reminders
-│   ├── mentor-matching (Groq AI)
+│   ├── mentor-matching (optional provider configuration, if enabled by AMET)
 │   └── send-feedback-notification
 └── Row-Level Security (Authorization)
 ```
@@ -75,6 +75,8 @@ Supabase (Backend)
 ---
 
 ## Documentation
+
+**Note: The GitHub documentation is a supporting technical reference for architecture, deployment, environment setup, RLS, API/integration overview, admin operations, and troubleshooting. The formal client-facing handover package is provided separately through the Master Handover Package, Transition Documents, and Handover Acknowledgement.**
 
 | Document | Description |
 |----------|-------------|
@@ -106,7 +108,7 @@ Supabase (Backend)
 
 **ForgeAsh Technologies**
 - Email: connect@forgeash.in
-- Phone/WhatsApp: +91 63691 26439
+- Phone may be used for scheduling/coordination only.
 - Website: forgeash.in
 
 ---

@@ -1,4 +1,4 @@
-# Deployment Guide — AMET Alumni Portal
+# Deployment Guide — AMET Alumni Management Platform
 
 ## Frontend (Vercel)
 
@@ -50,7 +50,7 @@ supabase migration up
 ### Edge Functions
 Three functions are deployed and active:
 - `event-reminders` — Email reminders for events
-- `mentor-matching` — AI-powered mentor matching
+- `mentor-matching` — mentor matching workflow (optional AI provider, if enabled by AMET)
 - `send-feedback-notification` — Feedback email notifications
 
 To redeploy an edge function:

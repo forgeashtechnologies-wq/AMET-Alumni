@@ -1,18 +1,20 @@
-# Environment Variables — AMET Alumni Portal
+# Environment Variables — AMET Alumni Management Platform
 
 ## Frontend Variables (Vercel)
 
 | Variable | Description | Where to Get |
 |----------|-------------|--------------|
 | `REACT_APP_SUPABASE_URL` | Supabase project URL | Supabase Dashboard → Settings → API |
-| `REACT_APP_SUPABASE_ANON_KEY` | Supabase anonymous key | Supabase Dashboard → Settings → API |
+| `REACT_APP_SUPABASE_KEY` | Supabase anonymous key | Supabase Dashboard → Settings → API |
 
-## Supabase Edge Function Secrets
+## Optional Provider Secrets
 
-| Secret | Description | Where to Set |
-|--------|-------------|--------------|
-| `GROQ_API_KEY` | Groq API for mentor matching AI | Supabase Dashboard → Edge Functions → Secrets |
-| `SENDGRID_API_KEY` | SendGrid for email notifications | Supabase Dashboard → Edge Functions → Secrets |
+The following provider secrets are not required for the standard handover unless AMET separately chooses to enable the related optional integrations.
+
+| Secret | Purpose | Required at Handover? | Where to Set |
+|--------|---------|----------------------|--------------|
+| `AI_PROVIDER_API_KEY` | Optional provider for mentor matching workflows, if enabled later | No | Supabase Dashboard → Edge Functions → Secrets |
+| `EMAIL_PROVIDER_API_KEY` | Optional email provider configuration, if enabled later | No | Supabase Dashboard → Edge Functions → Secrets |
 
 ## Setting Environment Variables
 
@@ -20,10 +22,11 @@
 1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
 2. Add each variable for Production, Preview, and Development
 
-### In Supabase Edge Functions:
+### In Supabase Edge Functions (Optional only if AMET enables the related provider):
 ```bash
-supabase secrets set GROQ_API_KEY=your_key_here
-supabase secrets set SENDGRID_API_KEY=your_key_here
+# Optional only if AMET enables the related provider
+supabase secrets set AI_PROVIDER_API_KEY=your_key_here
+supabase secrets set EMAIL_PROVIDER_API_KEY=your_key_here
 ```
 
 ## IMPORTANT SECURITY NOTES

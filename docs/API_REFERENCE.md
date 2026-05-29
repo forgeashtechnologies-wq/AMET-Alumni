@@ -1,8 +1,8 @@
-# API Reference — AMET Alumni Portal
+# API Reference — AMET Alumni Management Platform
 
 ## Overview
 
-The AMET Alumni Portal uses Supabase as its backend. The frontend communicates directly with Supabase using:
+The AMET Alumni Management Platform uses Supabase as its backend. The frontend communicates directly with Supabase using:
 - **Supabase JS Client** for data operations
 - **RPC Functions** for complex business logic
 - **Edge Functions** for serverless operations
@@ -204,8 +204,8 @@ Securely sets user role via admin API.
 
 **Method:** POST
 
-**Headers:**
-- Authorization: Bearer `<service_role_key>`
+**Access Control:**
+Privileged admin endpoint. Do not call from frontend/client code. Access must be handled only through secure admin-controlled workflows during KT or by AMET's authorized technical team. Service-role keys must never be exposed in frontend code or general documentation.
 
 **Body:**
 ```json
@@ -222,8 +222,8 @@ Invites a user via Supabase Admin API.
 
 **Method:** POST
 
-**Headers:**
-- Authorization: Bearer `<service_role_key>`
+**Access Control:**
+Privileged admin endpoint. Do not call from frontend/client code. Access must be handled only through secure admin-controlled workflows during KT or by AMET's authorized technical team. Service-role keys must never be exposed in frontend code or general documentation.
 
 **Body:**
 ```json
@@ -239,17 +239,17 @@ Sends email reminders for upcoming events.
 **Trigger:** Scheduled via Supabase cron jobs
 
 **Environment Variables:**
-- SENDGRID_API_KEY
+- EMAIL_PROVIDER_API_KEY (if email provider is configured)
 
 ### mentor-matching
-AI-powered mentor matching using Groq API.
+Mentor matching workflow (optional AI provider, if enabled by AMET).
 
 **Endpoint:** `/functions/v1/mentor-matching`
 
 **Method:** POST
 
 **Environment Variables:**
-- GROQ_API_KEY
+- AI_PROVIDER_API_KEY (if AI provider is configured)
 
 ### send-feedback-notification
 Sends email notifications for user feedback.
@@ -259,7 +259,7 @@ Sends email notifications for user feedback.
 **Method:** POST
 
 **Environment Variables:**
-- SENDGRID_API_KEY
+- EMAIL_PROVIDER_API_KEY (if email provider is configured)
 
 ## Storage Buckets
 

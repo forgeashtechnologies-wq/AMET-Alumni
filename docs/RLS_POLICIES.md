@@ -1,8 +1,8 @@
-# RLS Policies — AMET Alumni Portal
+# RLS Policies — AMET Alumni Management Platform
 
 ## Overview
 
-Row Level Security (RLS) is the primary security mechanism in the AMET Alumni Portal. All sensitive tables have RLS enabled with policies that enforce role-based access control.
+Row Level Security (RLS) is the primary security mechanism in the AMET Alumni Management Platform. All sensitive tables have RLS enabled with policies that enforce role-based access control.
 
 ## Core RLS Principles
 

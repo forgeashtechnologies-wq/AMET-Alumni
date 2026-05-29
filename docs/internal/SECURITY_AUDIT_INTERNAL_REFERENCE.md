@@ -1,3 +1,7 @@
+> **INTERNAL REFERENCE — NOT PART OF FORMAL CLIENT HANDOVER PACKAGE**
+> 
+> Historical audit notes require source-of-truth verification against the live Supabase project before external circulation.
+
 # AMET Alumni Platform – Architecture & Security Audit
 
 > **Scope & Methodology**  

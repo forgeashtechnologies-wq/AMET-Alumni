@@ -1,4 +1,4 @@
-# Environment Variables — AMET Alumni Portal
+# Environment Variables — AMET Alumni Management Platform
 
 ## Frontend Variables (Vercel)
 
@@ -11,8 +11,8 @@
 
 | Secret | Description | Where to Set |
 |--------|-------------|--------------|
-| `GROQ_API_KEY` | Groq API for mentor matching AI | Supabase Dashboard → Edge Functions → Secrets |
-| `SENDGRID_API_KEY` | SendGrid for email notifications | Supabase Dashboard → Edge Functions → Secrets |
+| `AI_PROVIDER_API_KEY` | Optional AI provider for mentor matching, if enabled by AMET | Supabase Dashboard → Edge Functions → Secrets (if AI provider is configured) |
+| `EMAIL_PROVIDER_API_KEY` | Email provider configuration, if enabled by AMET | Supabase Dashboard → Edge Functions → Secrets (if email provider is configured) |
 
 ## Setting Environment Variables
 
@@ -22,8 +22,8 @@
 
 ### In Supabase Edge Functions:
 ```bash
-supabase secrets set GROQ_API_KEY=your_key_here
-supabase secrets set SENDGRID_API_KEY=your_key_here
+supabase secrets set AI_PROVIDER_API_KEY=your_key_here (if AI provider is configured)
+supabase secrets set EMAIL_PROVIDER_API_KEY=your_key_here (if email provider is configured)
 ```
 
 ## IMPORTANT SECURITY NOTES

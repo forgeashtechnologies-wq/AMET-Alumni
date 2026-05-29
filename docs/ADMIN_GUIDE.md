@@ -1,8 +1,8 @@
-# Admin Guide — AMET Alumni Portal
+# Admin Guide — AMET Alumni Management Platform
 
 ## Overview
 
-This guide is for administrators managing the AMET Alumni Portal. It covers user management, approval workflows, and administrative tasks.
+This guide is for administrators managing the AMET Alumni Management Platform. It covers user management, approval workflows, and administrative tasks.
 
 ## Admin Roles
 
@@ -241,13 +241,13 @@ Users can reset their own password via the "Forgot Password" link. Admins cannot
 1. Immediately change all admin passwords
 2. Review recent admin activity logs
 3. Check for unauthorized data access
-4. Notify ForgeAsh Technologies: connect@forgeash.in
+4. Record the issue internally and contact the designated support channel if the issue relates to handover clarification: connect@forgeash.in
 5. Document all actions taken
 
 ### Data Breach
 
 1. Immediately isolate affected systems
-2. Notify ForgeAsh Technologies
+2. Record the issue internally and contact the designated support channel if the issue relates to handover clarification
 3. Review affected user data
 4. Notify affected users per compliance requirements
 5. Document breach and response
@@ -263,8 +263,8 @@ Users can reset their own password via the "Forgot Password" link. Admins cannot
 
 ## Contact Information
 
-- **ForgeAsh Technologies**: connect@forgeash.in | +91 63691 26439
-- **Emergency Support**: Available 24/7 for critical issues
+- **Official support and documentation communication**: [connect@forgeash.in](mailto:connect@forgeash.in)
+- **Note**: Phone may be used for scheduling or coordination only. Production incident management, bug fixes, infrastructure changes, and new development are outside the standard clarification support scope unless separately agreed.
 
 ## Training Resources
 

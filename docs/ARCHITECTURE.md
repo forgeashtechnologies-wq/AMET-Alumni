@@ -1,8 +1,8 @@
-# System Architecture — AMET Alumni Portal
+# System Architecture — AMET Alumni Management Platform
 
 ## Quick Overview
 
-A multi-tenant alumni management platform with 5 user roles, 10 modules, and 74 features. Built on modern cloud infrastructure with zero-trust security (RLS at database level).
+A multi-tenant alumni management platform with 5 user roles, 10 modules, and 74 features. Built on modern cloud infrastructure with role-based and RLS-backed access control.
 
 ### Technology Stack
 
@@ -30,8 +30,8 @@ A multi-tenant alumni management platform with 5 user roles, 10 modules, and 74 
 | Indexes | 470+ |
 
 ### Edge Functions
-- **event-reminders** — SendGrid email reminders for upcoming events
-- **mentor-matching** — AI matching via Groq llama3-8b-8192
+- **event-reminders** — Email notification workflow for upcoming events (subject to provider configuration, if enabled by AMET)
+- **mentor-matching** — Mentor matching workflow (optional AI provider, if enabled by AMET)
 - **send-feedback-notification** — Email on feedback submission
 
 ### Security Model
@@ -540,4 +540,4 @@ RLS is the **ultimate authority**; frontend permissions and RPCs are designed to
 - **This Architecture Book**:  
   `archive/docs/system-architecture-book.md`
 
-These two documents together give you a 100–200% depth view of **who can do what, where, and how** in the AMS‑AMET system.
+These two documents together give you a detailed technical reference of **who can do what, where, and how** in the AMS‑AMET system.

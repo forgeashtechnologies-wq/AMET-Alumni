@@ -39,8 +39,8 @@
 | Edge Functions | Deno (TypeScript) | 3 functions |
 | Frontend Hosting | Vercel | Auto-deploy |
 | Backend Hosting | Supabase Cloud | Managed |
-| Email | SendGrid | Free tier (100/day) |
-| AI Matching | Groq API | llama3-8b-8192 |
+| Email | email provider configuration, if enabled by AMET | Subject to provider configuration |
+| AI Matching | optional provider configuration, if enabled by AMET | mentor-matching function |
 
 ---
 
@@ -154,7 +154,8 @@ Attendees: Ashwin (ForgeAsh) + Vineeth + ERP team
 **Duration:** 30 calendar days from Stage 2 sign-off
 **Contact:** connect@forgeash.in | +91 63691 26439
 **Response:** 48-96 business hours
-**Channel:** Email (official) | WhatsApp (coordination only)
+**Channel:** Official support and documentation communication: [connect@forgeash.in](mailto:connect@forgeash.in)
+**Note:** Phone may be used for scheduling/coordination only.
 
 ### Included (Clarification Only):
 - Clarification on any handover document

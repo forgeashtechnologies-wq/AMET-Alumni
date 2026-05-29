@@ -1,4 +1,4 @@
-# Troubleshooting Guide — AMET Alumni Portal
+# Troubleshooting Guide — AMET Alumni Management Platform
 
 ## Common Issues & Fixes
 
@@ -22,20 +22,20 @@
 ---
 
 ### 3. Emails not sending
-**Cause:** SendGrid API key expired or limit reached
+**Cause:** Email provider configuration issue or limit reached
 **Fix:**
-1. Check SendGrid dashboard for account status
-2. Free tier: 100 emails/day limit
-3. Update secret: `supabase secrets set SENDGRID_API_KEY=new_key` 
+1. Check your configured email provider dashboard for account status
+2. Verify email service tier and daily limits
+3. Update secret: `supabase secrets set EMAIL_PROVIDER_API_KEY=new_key` (if email provider is configured) 
 4. Redeploy edge function: `supabase functions deploy send-feedback-notification` 
 
 ---
 
 ### 4. Mentor matching not working
-**Cause:** Groq API key expired
+**Cause:** Optional AI provider API key expired (if AI matching is enabled)
 **Fix:**
-1. Get new key from: https://console.groq.com
-2. Update: `supabase secrets set GROQ_API_KEY=new_key` 
+1. If AI matching is enabled, get new key from your configured AI provider
+2. Update: `supabase secrets set AI_PROVIDER_API_KEY=new_key` (if AI provider is configured) 
 3. Redeploy: `supabase functions deploy mentor-matching` 
 
 ---

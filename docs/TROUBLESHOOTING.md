@@ -7,7 +7,7 @@
 **Fix:**
 1. Go to Vercel Dashboard → Settings → Environment Variables
 2. Verify `REACT_APP_SUPABASE_URL` is set
-3. Verify `REACT_APP_SUPABASE_ANON_KEY` is set
+3. Verify `REACT_APP_SUPABASE_KEY` is set
 4. Redeploy: Vercel Dashboard → Deployments → Redeploy
 
 ---
@@ -68,7 +68,9 @@
 
 ---
 
-## Emergency Contacts
-- **ForgeAsh Technologies:** connect@forgeash.in | +91 63691 26439
+## Reference Contacts
+
+- **Official support and documentation communication:** [connect@forgeash.in](mailto:connect@forgeash.in)
+- **Note:** Phone may be used for scheduling or coordination only. Production incident management, bug fixes, infrastructure changes, and new development are outside the standard clarification support scope unless separately agreed.
 - **Supabase Support:** support@supabase.com
 - **Vercel Support:** https://vercel.com/support

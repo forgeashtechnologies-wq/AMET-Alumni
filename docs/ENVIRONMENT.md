@@ -5,14 +5,16 @@
 | Variable | Description | Where to Get |
 |----------|-------------|--------------|
 | `REACT_APP_SUPABASE_URL` | Supabase project URL | Supabase Dashboard → Settings → API |
-| `REACT_APP_SUPABASE_ANON_KEY` | Supabase anonymous key | Supabase Dashboard → Settings → API |
+| `REACT_APP_SUPABASE_KEY` | Supabase anonymous key | Supabase Dashboard → Settings → API |
 
-## Supabase Edge Function Secrets
+## Optional Provider Secrets
 
-| Secret | Description | Where to Set |
-|--------|-------------|--------------|
-| `AI_PROVIDER_API_KEY` | Optional AI provider for mentor matching, if enabled by AMET | Supabase Dashboard → Edge Functions → Secrets (if AI provider is configured) |
-| `EMAIL_PROVIDER_API_KEY` | Email provider configuration, if enabled by AMET | Supabase Dashboard → Edge Functions → Secrets (if email provider is configured) |
+The following provider secrets are not required for the standard handover unless AMET separately chooses to enable the related optional integrations.
+
+| Secret | Purpose | Required at Handover? | Where to Set |
+|--------|---------|----------------------|--------------|
+| `AI_PROVIDER_API_KEY` | Optional provider for mentor matching workflows, if enabled later | No | Supabase Dashboard → Edge Functions → Secrets |
+| `EMAIL_PROVIDER_API_KEY` | Optional email provider configuration, if enabled later | No | Supabase Dashboard → Edge Functions → Secrets |
 
 ## Setting Environment Variables
 
@@ -20,10 +22,11 @@
 1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
 2. Add each variable for Production, Preview, and Development
 
-### In Supabase Edge Functions:
+### In Supabase Edge Functions (Optional only if AMET enables the related provider):
 ```bash
-supabase secrets set AI_PROVIDER_API_KEY=your_key_here (if AI provider is configured)
-supabase secrets set EMAIL_PROVIDER_API_KEY=your_key_here (if email provider is configured)
+# Optional only if AMET enables the related provider
+supabase secrets set AI_PROVIDER_API_KEY=your_key_here
+supabase secrets set EMAIL_PROVIDER_API_KEY=your_key_here
 ```
 
 ## IMPORTANT SECURITY NOTES

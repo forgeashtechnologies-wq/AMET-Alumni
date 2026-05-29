@@ -16,7 +16,7 @@
 Add these in Vercel → Settings → Environment Variables:
 ```
 REACT_APP_SUPABASE_URL = https://your-project-ref.supabase.co
-REACT_APP_SUPABASE_ANON_KEY = [get from Supabase dashboard]
+REACT_APP_SUPABASE_KEY = [get from Supabase dashboard]
 ```
 
 ### Deploying Updates
@@ -48,10 +48,10 @@ supabase migration up
 ```
 
 ### Edge Functions
-Three functions are deployed and active:
-- `event-reminders` — Email reminders for events
-- `mentor-matching` — mentor matching workflow (optional AI provider, if enabled by AMET)
-- `send-feedback-notification` — Feedback email notifications
+Three edge function entries are documented for handover reference:
+- `event-reminders` — Event reminder / email notification workflow, subject to provider configuration if enabled by AMET
+- `mentor-matching` — Mentor matching workflow; optional provider configuration only if AMET enables it later
+- `send-feedback-notification` — Feedback notification workflow, subject to provider configuration if enabled by AMET
 
 To redeploy an edge function:
 ```bash
@@ -66,7 +66,7 @@ supabase functions deploy send-feedback-notification
 - [ ] Verify Vercel environment variables are set
 - [ ] Test login as Super Admin
 - [ ] Test login as Alumni
-- [ ] Verify email notifications working
+- [ ] Verify notification workflows according to AMET's enabled provider configuration
 - [ ] Check Supabase logs for errors
 - [ ] Verify all edge functions are active
 

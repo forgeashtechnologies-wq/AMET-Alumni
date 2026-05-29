@@ -39,8 +39,8 @@
 | Edge Functions | Deno (TypeScript) | 3 functions |
 | Frontend Hosting | Vercel | Auto-deploy |
 | Backend Hosting | Supabase Cloud | Managed |
-| Email | email provider configuration, if enabled by AMET | Subject to provider configuration |
-| AI Matching | optional provider configuration, if enabled by AMET | mentor-matching function |
+| Email Notifications | Optional provider configuration | Not required at handover unless enabled by AMET |
+| Mentor Matching Workflow | Existing workflow | Optional provider configuration only if AMET enables it later |
 
 ---
 
@@ -54,7 +54,7 @@
 5. GitHub: docs/RLS_POLICIES.md
 6. GitHub: supabase/README.md
 7. Excel: Delivered Scope Checklist
-8. DOCX: Handover Signoff (sign Stage 1)
+8. PDF/DOCX: Handover Acknowledgement & Signoff (sign Stage 1)
 
 ### Admin Team — Read in this order:
 1. This document
@@ -86,7 +86,7 @@ All technical documentation is in the docs/ folder:
 | docs/RLS_POLICIES.md | Row-Level Security overview, 404 policies |
 | docs/API_REFERENCE.md | Supabase APIs, edge functions, integrations |
 | docs/ADMIN_GUIDE.md | Admin operations, user management, moderation |
-| docs/TROUBLESHOOTING.md | Common issues, fixes, emergency contacts |
+| docs/TROUBLESHOOTING.md | Common issues, fixes, reference contacts |
 | docs/MASTER_HANDOVER_INDEX.md | This document |
 | frontend/README.md | Frontend setup and development guide |
 | supabase/README.md | Database setup, migrations, edge functions |
@@ -103,7 +103,7 @@ All technical documentation is in the docs/ folder:
 |----------|--------|----------|
 | Access Transfer Register | DOCX | Every credential transferred, tracked |
 | Credential Transfer Protocol | DOCX | Secure transfer method |
-| Final Completion Record | DOCX | Signed after handover complete |
+| Review/Stage 2 Completion Record | DOCX | Signed after handover complete |
 
 #### Delivered Within 14 Days
 | Video | Audience |
@@ -230,7 +230,7 @@ Full terms: See Handover Acknowledgement document Section 13
 | Phase 2 | Credentials transferred | ⏳ Pending |
 | Phase 2 | Domain transfer initiated | ⏳ Pending |
 | Phase 2 | Stage 2 signature received | ⏳ Pending |
-| Phase 3 | Completion Certificate issued | ⏳ Pending |
+| Phase 3 | Completion Certificate / commercial closure, if applicable under separate process | ⏳ Pending |
 | Phase 3 | Videos delivered (14 days) | ⏳ Pending |
 | Phase 3 | 30-day support window opened | ⏳ Pending |
 

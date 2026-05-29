@@ -204,8 +204,8 @@ Securely sets user role via admin API.
 
 **Method:** POST
 
-**Headers:**
-- Authorization: Bearer `<service_role_key>` — Note: Privileged admin operations must be handled only through secure server-side/admin-controlled workflows. Service-role keys must never be exposed in client code or general documentation.
+**Access Control:**
+Privileged admin endpoint. Do not call from frontend/client code. Access must be handled only through secure admin-controlled workflows during KT or by AMET's authorized technical team. Service-role keys must never be exposed in frontend code or general documentation.
 
 **Body:**
 ```json
@@ -222,8 +222,8 @@ Invites a user via Supabase Admin API.
 
 **Method:** POST
 
-**Headers:**
-- Authorization: Bearer `<service_role_key>` — Note: Privileged admin operations must be handled only through secure server-side/admin-controlled workflows. Service-role keys must never be exposed in client code or general documentation.
+**Access Control:**
+Privileged admin endpoint. Do not call from frontend/client code. Access must be handled only through secure admin-controlled workflows during KT or by AMET's authorized technical team. Service-role keys must never be exposed in frontend code or general documentation.
 
 **Body:**
 ```json

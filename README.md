@@ -87,9 +87,8 @@ Supabase (Backend)
 | [RLS Policies](./docs/RLS_POLICIES.md) | Row-Level Security documentation |
 | [API Reference](./docs/API_REFERENCE.md) | Database tables & RPC functions |
 | [Admin Guide](./docs/ADMIN_GUIDE.md) | Administration procedures |
+| [Security Configuration Summary](./docs/SECURITY_CONFIGURATION_SUMMARY.md) | High-level security configuration reference |
 | [Role Matrix](./docs/ROLE_MODULE_ACTION_MATRIX.md) | Permission matrix by role |
-
-> **Note:** Security configuration notes are maintained as internal reference material and are not part of the formal client handover package.
 
 ---
 

@@ -133,12 +133,22 @@ export function ensureChannelSubscribed(name) {
  * key should uniquely describe this listener (e.g., `${event}:${schema}:${table}:${filter}`).
  */
 export function onPostgresChangesOnce(channelName, key, params, handler) {
-  const channel = ensureChannelSubscribed(channelName);
+  const channel = getOrCreateChannel(channelName);
   const entry = _channelRegistry[channelName];
   if (!entry.listeners) entry.listeners = new Set();
   if (!entry.listeners.has(key)) {
     entry.listeners.add(key);
     channel.on('postgres_changes', params, handler);
+  }
+  // Subscribe only after all .on() listeners are attached
+  if (!entry.hasSubscribeCall) {
+    entry.hasSubscribeCall = true;
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        entry.subscribed = true;
+        try { if (typeof window !== 'undefined') { window.__sb_rt_ready__ = true; } } catch (_) { void 0; }
+      }
+    });
   }
   // return disposer that decrements refcount and removes channel when unused
   return () => {

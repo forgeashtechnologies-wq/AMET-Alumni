@@ -128,45 +128,45 @@ export function ensureChannelSubscribed(name) {
   return channel;
 }
 
+// Registry for postgres_changes listeners — each listener gets its own channel
+// to completely avoid race conditions where multiple hooks share one channel.
+const _pgListenerRegistry = (() => {
+  if (typeof window !== 'undefined') {
+    if (!window.__sb_pg_listeners__) window.__sb_pg_listeners__ = {};
+    return window.__sb_pg_listeners__;
+  }
+  return {};
+})();
+
 /**
- * Idempotently attach a postgres_changes listener to a channel.
- * key should uniquely describe this listener (e.g., `${event}:${schema}:${table}:${filter}`).
+ * Idempotently attach a postgres_changes listener.
+ * Each unique (channelName + key) gets its own Supabase channel, so there
+ * is never a race between .on() and .subscribe() regardless of how many
+ * hooks or components call this function.
  */
 export function onPostgresChangesOnce(channelName, key, params, handler) {
-  const channel = getOrCreateChannel(channelName);
-  const entry = _channelRegistry[channelName];
-  if (!entry.listeners) entry.listeners = new Set();
-  if (!entry.listeners.has(key)) {
-    entry.listeners.add(key);
-    channel.on('postgres_changes', params, handler);
+  const fullKey = `${channelName}:${key}`;
+  if (_pgListenerRegistry[fullKey]) {
+    return _pgListenerRegistry[fullKey].disposer;
   }
-  // Defer subscribe to next microtask so all synchronous .on() calls
-  // on the same channel (e.g. two filters in one useEffect) finish first.
-  if (!entry.subscribeQueued) {
-    entry.subscribeQueued = true;
-    queueMicrotask(() => {
-      const e = _channelRegistry[channelName];
-      if (!e || e.hasSubscribeCall) return;
-      e.hasSubscribeCall = true;
-      e.channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          e.subscribed = true;
-          try { if (typeof window !== 'undefined') { window.__sb_rt_ready__ = true; } } catch (_) { void 0; }
-        }
-      });
-    });
-  }
-  // return disposer that decrements refcount and removes channel when unused
-  return () => {
-    const e = _channelRegistry[channelName];
-    if (!e) return;
-    if (e.listeners && e.listeners.has(key)) e.listeners.delete(key);
-    e.refCount = Math.max(0, (e.refCount || 0) - 1);
-    if (e.refCount === 0) {
-      try { supabase.removeChannel(e.channel); } catch (_) { void 0; }
-      delete _channelRegistry[channelName];
-    }
+
+  const channel = supabase.channel(fullKey);
+  channel.on('postgres_changes', params, handler);
+
+  const disposer = () => {
+    try { supabase.removeChannel(channel); } catch (_) { void 0; }
+    delete _pgListenerRegistry[fullKey];
   };
+
+  _pgListenerRegistry[fullKey] = { channel, disposer };
+
+  channel.subscribe((status) => {
+    if (status === 'SUBSCRIBED') {
+      try { if (typeof window !== 'undefined') { window.__sb_rt_ready__ = true; } } catch (_) { void 0; }
+    }
+  });
+
+  return disposer;
 }
 
 // --- Realtime readiness helpers ---

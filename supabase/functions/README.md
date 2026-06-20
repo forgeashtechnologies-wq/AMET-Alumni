@@ -11,7 +11,7 @@ The `admin-delete-user` function securely deletes users from Auth and related da
 
 ```bash
 # Deploy the function to Supabase
-cd /Users/ashwin/CascadeProjects/AMETNEW/AMETNEWSUPABASE/supabase/functions
+cd ./supabase/functions
 supabase functions deploy admin-delete-user
 
 # Set required secrets

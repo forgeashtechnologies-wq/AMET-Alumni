@@ -31,10 +31,6 @@ env.tmp
 *.swp
 *.swo
 *~
-.cursor/
-.windsurf/
-.emergent/
-
 # OS
 .DS_Store
 .DS_Store?
@@ -90,3 +86,4 @@ CONTRACT_PACK_INPUTS_DOSSIER.*
 .todo.md
 legal/
 scripts/
+.vercel

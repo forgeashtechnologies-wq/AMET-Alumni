@@ -140,14 +140,20 @@ export function onPostgresChangesOnce(channelName, key, params, handler) {
     entry.listeners.add(key);
     channel.on('postgres_changes', params, handler);
   }
-  // Subscribe only after all .on() listeners are attached
-  if (!entry.hasSubscribeCall) {
-    entry.hasSubscribeCall = true;
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        entry.subscribed = true;
-        try { if (typeof window !== 'undefined') { window.__sb_rt_ready__ = true; } } catch (_) { void 0; }
-      }
+  // Defer subscribe to next microtask so all synchronous .on() calls
+  // on the same channel (e.g. two filters in one useEffect) finish first.
+  if (!entry.subscribeQueued) {
+    entry.subscribeQueued = true;
+    queueMicrotask(() => {
+      const e = _channelRegistry[channelName];
+      if (!e || e.hasSubscribeCall) return;
+      e.hasSubscribeCall = true;
+      e.channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          e.subscribed = true;
+          try { if (typeof window !== 'undefined') { window.__sb_rt_ready__ = true; } } catch (_) { void 0; }
+        }
+      });
     });
   }
   // return disposer that decrements refcount and removes channel when unused

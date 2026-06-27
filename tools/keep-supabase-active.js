@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Keep Supabase project alive by sending periodic lightweight DB requests.
 // Supabase pauses free-tier projects after ~7 days of inactivity.
 // Run this script every 6 days via cron, GitHub Actions, or Vercel Cron.

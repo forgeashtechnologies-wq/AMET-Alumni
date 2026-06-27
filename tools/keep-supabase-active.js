@@ -18,7 +18,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const TABLE = process.env.KEEPALIVE_TABLE || 'alumni_directory_public';
+const TABLE = process.env.KEEPALIVE_TABLE || 'profiles';
 const REQUEST_COUNT = parseInt(process.env.KEEPALIVE_REQUESTS || '5', 10);
 
 const KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
@@ -31,9 +31,8 @@ if (!SUPABASE_URL || !KEY) {
 
 const baseUrl = SUPABASE_URL.replace(/\/$/, '');
 
-async function pingDatabase() {
-  // Lightweight request: fetch a single id from the table.
-  const url = `${baseUrl}/rest/v1/${TABLE}?select=id&limit=1`;
+async function pingTable(tableName) {
+  const url = `${baseUrl}/rest/v1/${tableName}?select=id&limit=1`;
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -48,6 +47,27 @@ async function pingDatabase() {
   }
 
   return response.status;
+}
+
+async function pingDatabase() {
+  // Try the requested table first, then fall back to common tables.
+  const tables = [TABLE, 'profiles', 'events', 'jobs', 'connections', 'groups'];
+  const seen = new Set();
+  let lastError = null;
+
+  for (const tableName of tables) {
+    if (seen.has(tableName)) continue;
+    seen.add(tableName);
+    try {
+      return await pingTable(tableName);
+    } catch (err) {
+      lastError = err;
+      // Only continue on 404; other errors (401, 403, etc.) should stop immediately.
+      if (!err.message.includes('404')) throw err;
+    }
+  }
+
+  throw lastError || new Error('No accessible table found');
 }
 
 async function main() {

@@ -4,22 +4,28 @@
 // Run this script every 6 days via cron, GitHub Actions, or Vercel Cron.
 //
 // Required env vars:
-//   SUPABASE_URL      - e.g. https://gvbtfolcizkzihforqte.supabase.co
-//   SUPABASE_ANON_KEY - your Supabase anon/public API key
+//   SUPABASE_URL                  - e.g. https://gvbtfolcizkzihforqte.supabase.co
+//   SUPABASE_ANON_KEY or
+//   SUPABASE_SERVICE_ROLE_KEY     - service role key is preferred for keep-alive
+//                                   because it bypasses RLS on protected tables
 // Optional:
 //   KEEPALIVE_TABLE   - table to query (default: alumni_directory_public)
 //   KEEPALIVE_REQUESTS - number of requests to send (default: 5)
 //
 // Usage:
-//   SUPABASE_URL=https://... SUPABASE_ANON_KEY=eyJ... node scripts/keep-supabase-active.js
+//   SUPABASE_URL=https://... SUPABASE_SERVICE_ROLE_KEY=eyJ... node tools/keep-supabase-active.js
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TABLE = process.env.KEEPALIVE_TABLE || 'alumni_directory_public';
 const REQUEST_COUNT = parseInt(process.env.KEEPALIVE_REQUESTS || '5', 10);
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Error: SUPABASE_URL and SUPABASE_ANON_KEY are required.');
+const KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+const KEY_TYPE = SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon';
+
+if (!SUPABASE_URL || !KEY) {
+  console.error('Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) are required.');
   process.exit(1);
 }
 
@@ -31,8 +37,8 @@ async function pingDatabase() {
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${KEY}`,
+      'apikey': KEY,
       'Accept': 'application/json',
     },
   });
@@ -47,6 +53,7 @@ async function pingDatabase() {
 async function main() {
   console.log(`[${new Date().toISOString()}] Starting Supabase keep-alive...`);
   console.log(`Project: ${baseUrl}`);
+  console.log(`Key type: ${KEY_TYPE}`);
   console.log(`Table: ${TABLE}`);
   console.log(`Requests: ${REQUEST_COUNT}`);
 

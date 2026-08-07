@@ -92,9 +92,9 @@ const AlumniProfile = () => {
           }
           row = data;
         } else {
-          // Normal directory flow: use directory_profiles_public view
+          // Normal directory flow: use directory_profiles_detail view for full profile payload
           const { data, error: supabaseError } = await supabase
-            .from('directory_profiles_public')
+            .from('directory_profiles_detail')
             .select('*')
             .eq('id', id)
             .maybeSingle();
@@ -191,13 +191,13 @@ const AlumniProfile = () => {
           joinedDate: data.created_at
             ? new Date(data.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
             : '',
-          about: data.about || '',
+          about: data.about || data.bio || data.biography || '',
           // Prefer structured experience when available, but preserve the plain-text
           // experience string from Profile settings so it can still be shown.
           experience: Array.isArray(rawExperience) ? rawExperience : [],
           experience_text:
-            !Array.isArray(rawExperience) && typeof rawExperience === 'string'
-              ? rawExperience
+            !Array.isArray(rawExperience) && (typeof rawExperience === 'string' || typeof rawExperience === 'number')
+              ? String(rawExperience)
               : '',
           education,
           skills: Array.isArray(data.skills) ? data.skills : [],
@@ -252,19 +252,35 @@ const AlumniProfile = () => {
               .eq('id', id)
               .maybeSingle();
 
-            if (!profileErr && profileRow && typeof profileRow.experience === 'string') {
-              transformed.experience_text = profileRow.experience;
+            if (!profileErr && profileRow && (typeof profileRow.experience === 'string' || typeof profileRow.experience === 'number')) {
+              transformed.experience_text = String(profileRow.experience);
             }
           }
         } catch (expErr) {
           logger.error('Error loading fallback experience from profiles:', expErr);
         }
 
+        const normalizeUrl = (url) => {
+          if (typeof url !== 'string' || !url.trim()) return url;
+          const trimmed = url.trim();
+          return /^[a-z]+:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+        };
+
         const socialLinks = await loadProfileSocialLinks(id);
         const mergedSocialLinks = {
           ...socialLinks,
-          ...(data.linkedin_url && !socialLinks?.linkedin ? { linkedin: data.linkedin_url } : {}),
+          ...(data.linkedin_url && !socialLinks?.linkedin
+            ? { linkedin: normalizeUrl(data.linkedin_url) }
+            : {}),
         };
+
+        // Ensure all social link URLs have a scheme before rendering
+        Object.keys(mergedSocialLinks).forEach((key) => {
+          const value = mergedSocialLinks[key];
+          if (typeof value === 'string' && value.trim()) {
+            mergedSocialLinks[key] = normalizeUrl(value);
+          }
+        });
 
         setAlumnus({ ...transformed, socialLinks: mergedSocialLinks });
       } catch (err) {

@@ -462,6 +462,33 @@ export async function applyToJob(jobId, resumePath, coverLetter = null) {
   }
 }
 
+export async function fetchAlertPerformanceStats(userId) {
+  try {
+    if (!userId) {
+      return { success: false, error: 'User ID is required' };
+    }
+
+    const { data, error } = await supabase.rpc('get_alert_performance_stats', {
+      p_user_id: userId,
+    });
+
+    if (error) {
+      logger.error('fetchAlertPerformanceStats error:', error);
+      return { success: false, error: mapJobError(error) };
+    }
+
+    const totalJobsThisWeek = (data || []).reduce(
+      (sum, row) => sum + (Number(row.jobs_this_week) || 0),
+      0
+    );
+
+    return { success: true, jobsThisWeek: totalJobsThisWeek, stats: data || [] };
+  } catch (err) {
+    logger.error('fetchAlertPerformanceStats exception:', err);
+    return { success: false, error: mapJobError(err) };
+  }
+}
+
 export default {
   createJob,
   updateJob,
@@ -474,4 +501,5 @@ export default {
   updateJobAlert,
   deleteJobAlert,
   applyToJob,
+  fetchAlertPerformanceStats,
 };

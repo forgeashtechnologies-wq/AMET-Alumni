@@ -3,11 +3,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../common/NotificationCenter';
 import { useNavigate } from 'react-router-dom';
 import logger from '../../utils/logger';
-import { 
+import {
   createJobAlert,
   updateJobAlert,
   deleteJobAlert,
   fetchJobAlerts,
+  fetchAlertPerformanceStats,
 } from '../../services/jobService';
 import { 
   BellIcon,
@@ -50,6 +51,7 @@ const JobAlerts = () => {
   const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(true);
   const [alerts, setAlerts] = useState([]);
+  const [jobsThisWeek, setJobsThisWeek] = useState(null);
   const [fetchError, setFetchError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [togglingId, setTogglingId] = useState(null);
@@ -119,6 +121,15 @@ const JobAlerts = () => {
       }
 
       setAlerts(result.data || []);
+
+      // Fetch performance stats (non-blocking — don't fail the page if this errors)
+      fetchAlertPerformanceStats(user.id)
+        .then((statsResult) => {
+          if (statsResult.success) {
+            setJobsThisWeek(statsResult.jobsThisWeek);
+          }
+        })
+        .catch((err) => logger.error('Error fetching alert performance stats:', err));
     } catch (error) {
       logger.error('Error fetching job alerts:', error);
       setFetchError(error?.message || 'Could not fetch job alerts.');
@@ -338,8 +349,10 @@ const JobAlerts = () => {
           <div className="text-sm text-gray-600">Active Alerts</div>
         </div>
         <div className="glass-card rounded-lg p-6 text-center">
-          <div className="text-2xl font-bold text-green-600">–</div>
-          <div className="text-sm text-gray-600">Jobs Found This Week (coming soon)</div>
+          <div className="text-2xl font-bold text-green-600">
+            {jobsThisWeek !== null ? jobsThisWeek : '–'}
+          </div>
+          <div className="text-sm text-gray-600">Jobs Found This Week</div>
         </div>
         <div className="glass-card rounded-lg p-6 text-center">
           <div className="text-2xl font-bold text-purple-600">

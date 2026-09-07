@@ -374,19 +374,43 @@ export async function updateJobAlert(alertId, alertData) {
     if (!alertId) {
       return { success: false, error: 'Alert ID is required' };
     }
-    
-    const { error } = await supabase.rpc('update_job_alert', {
-      p_id: alertId,
-      p_alert_name: alertData.alert_name ? sanitizeText(alertData.alert_name) : null,
-      p_keywords: alertData.keywords?.map(k => sanitizeText(k)).filter(Boolean) || null,
-      p_location: alertData.location ? sanitizeText(alertData.location) : null,
-      p_job_type: alertData.job_type || null,
-      p_experience_level: alertData.experience_level || null,
-      p_min_salary: alertData.min_salary ? parseInt(alertData.min_salary, 10) : null,
-      p_max_salary: alertData.max_salary ? parseInt(alertData.max_salary, 10) : null,
-      p_frequency: alertData.frequency || null,
-      p_is_active: alertData.is_active,
-    });
+
+    // Only send fields that are actually present in alertData.
+    // The RPC uses COALESCE to preserve fields when NULL is passed,
+    // but we also avoid sending null for fields the caller didn't intend to change.
+    const params = { p_id: alertId };
+
+    if (alertData.alert_name !== undefined) {
+      params.p_alert_name = sanitizeText(alertData.alert_name);
+    }
+    if (alertData.keywords !== undefined) {
+      params.p_keywords = Array.isArray(alertData.keywords)
+        ? alertData.keywords.map(k => sanitizeText(k)).filter(Boolean)
+        : null;
+    }
+    if (alertData.location !== undefined) {
+      params.p_location = alertData.location ? sanitizeText(alertData.location) : null;
+    }
+    if (alertData.job_type !== undefined) {
+      params.p_job_type = alertData.job_type || null;
+    }
+    if (alertData.experience_level !== undefined) {
+      params.p_experience_level = alertData.experience_level || null;
+    }
+    if (alertData.min_salary !== undefined) {
+      params.p_min_salary = alertData.min_salary ? parseInt(alertData.min_salary, 10) : null;
+    }
+    if (alertData.max_salary !== undefined) {
+      params.p_max_salary = alertData.max_salary ? parseInt(alertData.max_salary, 10) : null;
+    }
+    if (alertData.frequency !== undefined) {
+      params.p_frequency = alertData.frequency || null;
+    }
+    if (alertData.is_active !== undefined) {
+      params.p_is_active = alertData.is_active;
+    }
+
+    const { error } = await supabase.rpc('update_job_alert', params);
     
     if (error) {
       logger.error('updateJobAlert RPC error:', error);

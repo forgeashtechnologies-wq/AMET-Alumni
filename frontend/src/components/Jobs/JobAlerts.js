@@ -84,7 +84,8 @@ const JobAlerts = () => {
     { value: 'any', label: 'Any Experience Level' },
     { value: 'entry', label: 'Entry Level (0-2 years)' },
     { value: 'mid', label: 'Mid Level (3-7 years)' },
-    { value: 'senior', label: 'Senior Level (8+ years)' }
+    { value: 'senior', label: 'Senior Level (8+ years)' },
+    { value: 'lead', label: 'Lead Level (10+ years)' }
   ];
 
   const frequencies = [
@@ -370,18 +371,8 @@ const JobAlerts = () => {
         </div>
       )}
 
-      {/* Conditional Rendering: Show Form or List */}
-      {showCreateForm ? (
-        <div className="glass-card rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {editingAlert ? 'Edit Job Alert' : 'Create Job Alert'}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Form fields... */}
-          </form>
-        </div>
-      ) : (
-        <div className="glass-card rounded-lg p-6">
+      {/* Conditional Rendering: Show List (form is in modal) */}
+      <div className="glass-card rounded-lg p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Job Alerts</h2>
           {loading ? (
             <div className="text-center py-12">Loading...</div>
@@ -513,8 +504,7 @@ const JobAlerts = () => {
             </div>
           )}
         </div>
-      )}
-      
+
       {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="glass-card rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">

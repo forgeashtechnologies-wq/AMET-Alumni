@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import { iconForType } from './NotificationIcons';
 import { getNotificationLink, type Notification } from '../../api/notifications';
+import { useAuth } from '../../contexts/AuthContext';
 
 const labelForType = (type?: string): string => {
   const t = (type || '').toLowerCase();
@@ -25,13 +26,16 @@ type Props = { n: Notification; onToggleRead?: (id: string, toRead?: boolean) =>
 
 export default function NotificationItem({ n, onToggleRead, onNavigate }: Props) {
   const navigate = useNavigate();
+  const { profile } = useAuth() as any;
+  const userRole = profile?.role;
   const Icon = iconForType(n.type, n.metadata || undefined);
   const unread = !n.is_read;
   const title = n.title || 'New activity';
   const message = n.message || '';
-  
+
   // Use secure link getter (sanitizes and derives safe links)
-  const safeLink = getNotificationLink(n);
+  // Pass userRole so profile-entity notifications route correctly for non-admins
+  const safeLink = getNotificationLink(n, userRole);
   
   const open = () => {
     // When opening an unread notification from the list, mark it as read

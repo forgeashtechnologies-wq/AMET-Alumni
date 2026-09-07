@@ -7,25 +7,34 @@ import Avatar from '../common/Avatar';
 import { useAvatars } from '../../hooks/useAvatar';
 import logger from '../../utils/logger';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  getNotificationLink, 
-  fetchNotifications as fetchNotificationsAPI,
-  markOneRead as markOneReadAPI,
-  markAllRead as markAllReadAPI,
-  subscribeMyNotifications
-} from '../../api/notifications.ts';
+import { useNotifications, useBellUnreadCount } from '../../hooks/useNotifications';
+import NotificationItem from './NotificationItem';
 
 const NotificationsPage = () => {
   const { user: authUser, profile } = useAuth();
   const currentUser = profile || authUser;
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unread', 'read'
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
-  // Track component mount state
   const isMountedRef = useRef(true);
+
+  // Use the unified notifications hook — provides pagination, realtime (shared singleton),
+  // optimistic mark-read/unread, and load-more. This eliminates the duplicate realtime
+  // subscription that existed when this page managed its own channel.
+  const {
+    items: notifications,
+    isLoading: loading,
+    isFetching,
+    error: notifError,
+    filterTab,
+    setFilterTab,
+    markOne,
+    markAll,
+    refetch,
+  } = useNotifications();
+
+  // Use the bell unread count hook for the accurate total (not page-derived count)
+  const { count: totalUnreadCount } = useBellUnreadCount();
 
   // Fetch avatars for connection requests
   const requestUserIds = [
@@ -36,33 +45,6 @@ const NotificationsPage = () => {
     useSignedUrls: true,
     autoFetch: requestUserIds.length > 0,
   });
-
-  const fetchNotifications = useCallback(async () => {
-    if (!currentUser || !isMountedRef.current) return;
-
-    setLoading(true);
-    try {
-      // Use the canonical paginated RPC via the TS API
-      // This respects notification_preferences and RLS
-      const data = await fetchNotificationsAPI({
-        limit: 50,
-        offset: 0,
-        unreadOnly: activeTab === 'unread',
-        readOnly: activeTab === 'read',
-      });
-
-      if (isMountedRef.current) {
-        setNotifications(data || []);
-      }
-    } catch (err) {
-      logger.error('Error fetching notifications:', err);
-      toast.error('Failed to load notifications');
-    } finally {
-      if (isMountedRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [currentUser, activeTab]);
 
   const fetchConnectionRequests = useCallback(async () => {
     if (!currentUser || !isMountedRef.current) return;
@@ -101,82 +83,40 @@ const NotificationsPage = () => {
     }
   }, [currentUser]);
 
-  const handleNotificationsUpdate = useCallback((payload) => {
-    if (!isMountedRef.current) return;
-    logger.log('Realtime notification update:', payload);
-    fetchNotifications();
-  }, [fetchNotifications]);
-
-  const handleConnectionsUpdate = useCallback((payload) => {
-    if (!isMountedRef.current) return;
-    logger.log('Realtime connection update:', payload);
-    fetchConnectionRequests();
-  }, [fetchConnectionRequests]);
-
-  // Realtime subscription ref
-  const notifSubRef = useRef(null);
+  // Only subscribe to connections changes — notifications realtime is handled
+  // by the useNotifications hook via the shared singleton channel.
   const connSubRef = useRef(null);
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    
+
     isMountedRef.current = true;
-    
-    fetchNotifications();
     fetchConnectionRequests();
-    
-    // Use canonical TS realtime helper for notifications
-    notifSubRef.current = subscribeMyNotifications(currentUser.id, handleNotificationsUpdate);
-    
-    // Subscribe to connections changes
+
+    // Subscribe to connections changes only (notifications are handled by the hook)
     connSubRef.current = supabase
       .channel(`connections:${currentUser.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'connections' },
-        handleConnectionsUpdate
+        () => {
+          if (isMountedRef.current) fetchConnectionRequests();
+        }
       )
       .subscribe();
-    
+
     return () => {
       isMountedRef.current = false;
-      if (notifSubRef.current) {
-        supabase.removeChannel(notifSubRef.current);
-      }
       if (connSubRef.current) {
         supabase.removeChannel(connSubRef.current);
       }
     };
-  }, [currentUser?.id, fetchNotifications, fetchConnectionRequests, handleNotificationsUpdate, handleConnectionsUpdate]);
-
-
-
-  const markAsRead = async (notificationId) => {
-    try {
-      // Use canonical TS API which calls the secure RPC
-      await markOneReadAPI(notificationId);
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-      );
-    } catch (err) {
-      logger.error('Error marking notification as read:', err);
-      toast.error('Failed to mark notification as read');
-    }
-  };
+  }, [currentUser?.id, fetchConnectionRequests]);
 
   const markAllAsRead = async () => {
-    if (!currentUser || notifications.length === 0) return;
-
     try {
-      // Use canonical TS API which calls the secure RPC
-      await markAllReadAPI();
-      
-      // Update local state
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      await markAll();
       toast.success('All notifications marked as read');
-      fetchNotifications();
     } catch (err) {
       logger.error('Error marking all notifications as read:', err);
       toast.error('Failed to mark notifications as read');
@@ -192,8 +132,7 @@ const NotificationsPage = () => {
 
       if (error) throw error;
       toast.success(`Request ${newStatus === 'accepted' ? 'accepted' : 'declined'}.`);
-      
-      // Refresh connection requests
+
       fetchConnectionRequests();
     } catch (error) {
       logger.error('Error responding to request:', error);
@@ -213,8 +152,7 @@ const NotificationsPage = () => {
 
       if (error) throw error;
       toast.success('Request cancelled.');
-      
-      // Refresh connection requests
+
       fetchConnectionRequests();
     } catch (error) {
       logger.error('Error cancelling request:', error);
@@ -231,17 +169,17 @@ const NotificationsPage = () => {
   };
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
+    setFilterTab(tab);
   };
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6">
       <h1 className="text-2xl font-bold mb-6">Notifications</h1>
-      
+
       {/* Connection Requests Section */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Connection Requests</h2>
-        
+
         {requestsLoading ? (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ocean-500 mx-auto"></div>
@@ -270,13 +208,13 @@ const NotificationsPage = () => {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <button 
+                        <button
                           onClick={() => handleConnectionResponse(req.id, 'accepted')}
                           className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg bg-gradient-to-b from-ocean-500 to-ocean-600 text-white text-sm font-medium hover:from-ocean-600 hover:to-ocean-700 transition-[colors,opacity,transform,shadow] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean-500 focus-visible:ring-offset-2"
                         >
                           Accept
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleConnectionResponse(req.id, 'declined')}
                           className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg bg-gradient-to-b from-red-500 to-red-600 text-white text-sm font-medium hover:from-red-600 hover:to-red-700 transition-[colors,opacity,transform,shadow] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean-500 focus-visible:ring-offset-2"
                         >
@@ -288,7 +226,7 @@ const NotificationsPage = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Outgoing Requests */}
             {outgoingRequests.length > 0 && (
               <div className="mt-6">
@@ -310,7 +248,7 @@ const NotificationsPage = () => {
                           <p className="text-xs text-gray-400 mt-1">Sent {formatDate(req.created_at)}</p>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={() => handleCancelRequest(req.id)}
                         className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 text-sm font-medium transition-[colors,opacity,transform,shadow] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean-500 focus-visible:ring-offset-2"
                       >
@@ -321,7 +259,7 @@ const NotificationsPage = () => {
                 </div>
               </div>
             )}
-            
+
             {incomingRequests.length === 0 && outgoingRequests.length === 0 && (
               <div className="bg-white rounded-lg shadow p-6 text-center">
                 <p className="text-gray-500">No pending connection requests</p>
@@ -330,70 +268,72 @@ const NotificationsPage = () => {
           </div>
         )}
       </div>
-      
+
       {/* Notifications Section */}
       <div className="mt-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">All Notifications</h2>
-          <button 
-            onClick={markAllAsRead} 
-            className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg border-2 border-ocean-600 text-ocean-600 hover:bg-ocean-600 hover:text-white text-sm transition-[colors,opacity,transform,shadow] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean-500 focus-visible:ring-offset-2"
-          >
-            Mark all as read
-          </button>
+          <div className="flex items-center gap-3">
+            {totalUnreadCount > 0 && (
+              <span className="text-sm text-gray-500">{totalUnreadCount} unread</span>
+            )}
+            <button
+              onClick={markAllAsRead}
+              disabled={loading || isFetching || notifications.length === 0}
+              className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg border-2 border-ocean-600 text-ocean-600 hover:bg-ocean-600 hover:text-white text-sm transition-[colors,opacity,transform,shadow] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ocean-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Mark all as read
+            </button>
+          </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {/* Tabs */}
           <div className="flex border-b">
-            <button 
+            <button
               onClick={() => handleTabChange('all')}
-              className={`flex-1 py-3 px-4 text-center ${activeTab === 'all' ? 'bg-gray-100 border-b-2 border-ocean-500 font-medium' : 'hover:bg-gray-50'}`}
+              className={`flex-1 py-3 px-4 text-center ${filterTab === 'all' ? 'bg-gray-100 border-b-2 border-ocean-500 font-medium' : 'hover:bg-gray-50'}`}
             >
               All
             </button>
-            <button 
+            <button
               onClick={() => handleTabChange('unread')}
-              className={`flex-1 py-3 px-4 text-center ${activeTab === 'unread' ? 'bg-gray-100 border-b-2 border-ocean-500 font-medium' : 'hover:bg-gray-50'}`}
+              className={`flex-1 py-3 px-4 text-center ${filterTab === 'unread' ? 'bg-gray-100 border-b-2 border-ocean-500 font-medium' : 'hover:bg-gray-50'}`}
             >
               Unread
             </button>
-            <button 
+            <button
               onClick={() => handleTabChange('read')}
-              className={`flex-1 py-3 px-4 text-center ${activeTab === 'read' ? 'bg-gray-100 border-b-2 border-ocean-500 font-medium' : 'hover:bg-gray-50'}`}
+              className={`flex-1 py-3 px-4 text-center ${filterTab === 'read' ? 'bg-gray-100 border-b-2 border-ocean-500 font-medium' : 'hover:bg-gray-50'}`}
             >
               Read
             </button>
           </div>
-          
+
           {/* Notification List */}
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ocean-500 mx-auto"></div>
               <p className="mt-2 text-gray-500">Loading notifications...</p>
             </div>
+          ) : notifError ? (
+            <div className="text-center py-8">
+              <p className="text-red-600 mb-2">Failed to load notifications.</p>
+              <button
+                onClick={() => refetch()}
+                className="text-sm text-ocean-600 hover:underline"
+              >
+                Retry
+              </button>
+            </div>
           ) : notifications.length > 0 ? (
             <div className="divide-y">
               {notifications.map(notification => (
-                (() => {
-                  const safeLink = getNotificationLink(notification);
-                  return (
-                    <Link 
-                      key={notification.id}
-                      to={safeLink}
-                      className="block"
-                      onClick={() => !notification.is_read && markAsRead(notification.id)}
-                    >
-                  <div className={`p-4 hover:bg-gray-50 ${!notification.is_read ? 'bg-ocean-50' : ''}`}>
-                    <div className="flex justify-between">
-                      <h3 className="font-medium text-gray-900">{notification.title}</h3>
-                      <span className="text-sm text-gray-500">{formatDate(notification.created_at)}</span>
-                    </div>
-                    <p className="mt-1 text-gray-600">{notification.message}</p>
-                  </div>
-                    </Link>
-                  );
-                })()
+                <NotificationItem
+                  key={notification.id}
+                  n={notification}
+                  onToggleRead={markOne}
+                />
               ))}
             </div>
           ) : (

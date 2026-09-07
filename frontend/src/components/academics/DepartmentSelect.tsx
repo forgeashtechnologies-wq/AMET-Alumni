@@ -13,7 +13,8 @@ type Props = {
 };
 
 export default function DepartmentSelect({ degreeCode, value, onChange, disabled, required, label = 'Department', id, error }: Props) {
-  const inputId = id || useId();
+  const generatedId = useId();
+  const inputId = id || generatedId;
   const { getDepartments, loading, error: loadError } = useAcademicsCatalog();
 
   const deps = degreeCode ? getDepartments(degreeCode) : [];

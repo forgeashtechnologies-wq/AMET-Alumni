@@ -12,15 +12,11 @@ import { subscribeToNotifications } from '../utils/notificationRealtime.ts';
 import logger from '../utils/logger';
 import {
   fetchNotifications,
-  fetchAdminNotifications,
   markAllRead,
   markOneRead,
   markOneUnread,
   getBellUnreadCount,
-  getAdminUnreadCount,
-  subscribeAdminNotifications,
   type BellNotification,
-  type AdminNotification,
   type NotificationType,
 } from '../api/notifications.ts';
 import { useAuth } from '../contexts/AuthContext';
@@ -63,7 +59,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     enabled: !!user,
     queryFn: async () => {
       const rows = await fetchNotifications({
-        limit: 12,
+        limit: 50,
         offset,
         unreadOnly: filterTab === 'unread',
         readOnly: filterTab === 'read',
@@ -91,8 +87,19 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     return Array.from(uniques).sort();
   }, [all]);
 
-  // unread count derived from all loaded
-  const unreadCount = useMemo(() => all.filter((n) => !n.is_read).length, [all]);
+  // unread count: use the bell unread count query for the accurate total,
+  // falling back to page-derived count if the RPC hasn't loaded yet.
+  // This avoids showing "0 unread" when there are >12 unread but only 12 loaded.
+  const bellCountQuery = useQuery({
+    queryKey: ['bell-unread-count', user?.id],
+    enabled: !!user?.id,
+    queryFn: getBellUnreadCount,
+    staleTime: 30_000,
+  });
+  const unreadCount = useMemo(() => {
+    if (bellCountQuery.data !== undefined) return bellCountQuery.data;
+    return all.filter((n) => !n.is_read).length;
+  }, [bellCountQuery.data, all]);
 
   // realtime subscription
   useEffect(() => {
@@ -103,18 +110,14 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     });
   }, [user?.id, qc]);
 
-  // pagination: load more (12 items per page, max 50 total)
+  // pagination: load more (12 items per page)
+  // No artificial cap — users can paginate through all their notifications.
+  // The RPC caps at 100 per call (LEAST(p_limit, 100)) to prevent abuse.
   const loadMore = async () => {
     const current = all;
     if (current.length === 0) return;
-    
-    // Enforce 50-item cap per spec
+
     const newOffset = offset + 12;
-    if (newOffset >= 50) {
-      logger.info('Reached 50-item notification cap');
-      return;
-    }
-    
     setOffset(newOffset);
   };
 
@@ -129,6 +132,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
 
   const markOne = async (id: string, toRead = true) => {
     const queryKeyBase = ['notifications', user?.id];
+    const bellKey = ['bell-unread-count', user?.id];
 
     // Optimistic: update all cached notification queries immediately
     const cached = qc.getQueryCache().findAll({ queryKey: queryKeyBase });
@@ -153,29 +157,41 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       }
     });
 
+    // Optimistically update the bell unread count immediately
+    const prevBellCount = qc.getQueryData<number>(bellKey);
+    if (typeof prevBellCount === 'number') {
+      qc.setQueryData<number>(bellKey, Math.max(0, prevBellCount + (toRead ? -1 : 1)));
+    }
+
     try {
       if (toRead) {
         await markOneRead(id);
       } else {
         await markOneUnread(id);
       }
+
+      // RPC succeeded — invalidate and force-refetch to align with server state
+      qc.invalidateQueries({ queryKey: queryKeyBase });
+      qc.invalidateQueries({ queryKey: bellKey });
+      // Force immediate refetch of bell count (don't rely on staleTime)
+      qc.refetchQueries({ queryKey: bellKey });
     } catch (error) {
       // Roll back optimistic changes on failure
       prevStates.forEach(([k, v]) => qc.setQueryData(k as any, v));
+      qc.setQueryData(bellKey, prevBellCount);
       logger.error('Error marking notification:', error);
       throw error;
-    } finally {
-      // Ensure refetch to align with server state
-      await qc.invalidateQueries({ queryKey: queryKeyBase });
-      await qc.invalidateQueries({ queryKey: ['bell-unread-count', user?.id] });
     }
   };
 
   const markAll = async () => {
     try {
+      // Optimistically set bell count to 0
+      qc.setQueryData<number>(['bell-unread-count', user?.id], 0);
       await markAllRead();
-      await qc.invalidateQueries({ queryKey: ['notifications', user?.id] });
-      await qc.invalidateQueries({ queryKey: ['bell-unread-count', user?.id] });
+      qc.invalidateQueries({ queryKey: ['notifications', user?.id] });
+      qc.invalidateQueries({ queryKey: ['bell-unread-count', user?.id] });
+      qc.refetchQueries({ queryKey: ['bell-unread-count', user?.id] });
     } catch (error) {
       logger.error('Error marking all notifications:', error);
       throw error;
@@ -216,191 +232,19 @@ export function useBellUnreadCount() {
     queryKey: ['bell-unread-count', user?.id],
     enabled: !!user?.id,
     queryFn: getBellUnreadCount,
-    staleTime: 30_000, // 30 seconds
+    staleTime: 5_000, // 5 seconds — more responsive to mark-as-read
     refetchOnWindowFocus: true,
-    refetchInterval: 60_000, // Refetch every minute
+    refetchInterval: 30_000, // Refetch every 30 seconds
   });
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates — force refetch on any notification change
   useEffect(() => {
     if (!user?.id) return;
     return subscribeToNotifications(user.id, () => {
       qc.invalidateQueries({ queryKey: ['bell-unread-count', user.id] });
+      qc.refetchQueries({ queryKey: ['bell-unread-count', user.id] });
     });
   }, [user?.id, qc]);
-
-  return {
-    count: query.data || 0,
-    isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
-  };
-}
-
-// ============================================================================
-// ADMIN NOTIFICATIONS HOOK
-// ============================================================================
-
-export interface UseAdminNotificationsOptions {
-  severity?: 'critical' | 'warning' | 'info';
-  unreadOnly?: boolean;
-}
-
-export function useAdminNotifications(options: UseAdminNotificationsOptions = {}) {
-  const { user, profile } = useAuth() as any;
-  const qc = useQueryClient();
-  const [filterTab, setFilterTab] = useState<NotificationFilterTab>('all');
-  const [offset, setOffset] = useState<number>(0);
-
-  // Only enable for admin/super_admin roles
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
-
-  const key = useMemo(
-    () => ['admin-notifications', user?.id, { offset, ...options }],
-    [user?.id, offset, options]
-  );
-
-  const query = useQuery({
-    queryKey: key,
-    enabled: !!user && isAdmin,
-    queryFn: async () => {
-      const rows = await fetchAdminNotifications({
-        limit: 12,
-        offset,
-        ...options,
-      });
-      return rows as AdminNotification[];
-    },
-    staleTime: 10_000,
-  });
-
-  const all = (query.data || []) as AdminNotification[];
-
-  // Apply tab filter
-  const items = useMemo(() => {
-    if (filterTab === 'unread') return all.filter((n) => !n.is_read);
-    if (filterTab === 'read') return all.filter((n) => n.is_read);
-    return all;
-  }, [all, filterTab]);
-
-  const unreadCount = useMemo(() => all.filter((n) => !n.is_read).length, [all]);
-
-  // Realtime subscription for admin notifications
-  const subRef = useRef<any>(null);
-  useEffect(() => {
-    if (!user?.id || !isAdmin) return;
-
-    // Clean up any existing subscription first
-    if (subRef.current) {
-      supabase.removeChannel(subRef.current);
-      subRef.current = null;
-    }
-
-    subRef.current = subscribeAdminNotifications(user.id, () => {
-      qc.invalidateQueries({ queryKey: ['admin-notifications', user.id] });
-      qc.invalidateQueries({ queryKey: ['admin-unread-count', user.id] });
-    });
-
-    return () => {
-      if (subRef.current) {
-        supabase.removeChannel(subRef.current);
-        subRef.current = null;
-      }
-    };
-  }, [user?.id, isAdmin, qc]);
-
-  const loadMore = async () => {
-    if (all.length === 0) return;
-    
-    // Enforce 50-item cap per spec
-    const newOffset = offset + 12;
-    if (newOffset >= 50) {
-      logger.info('Reached 50-item admin notification cap');
-      return;
-    }
-    
-    setOffset(newOffset);
-  };
-
-  const markOne = async (id: string, toRead = true) => {
-    try {
-      if (toRead) {
-        await markOneRead(id);
-      } else {
-        await markOneUnread(id);
-      }
-      await qc.invalidateQueries({ queryKey: ['admin-notifications', user?.id] });
-      await qc.invalidateQueries({ queryKey: ['admin-unread-count', user?.id] });
-    } catch (error) {
-      logger.error('Error marking admin notification:', error);
-      throw error;
-    }
-  };
-
-  const markAll = async () => {
-    try {
-      await markAllRead();
-      await qc.invalidateQueries({ queryKey: ['admin-notifications', user?.id] });
-      await qc.invalidateQueries({ queryKey: ['admin-unread-count', user?.id] });
-    } catch (error) {
-      logger.error('Error marking all admin notifications:', error);
-      throw error;
-    }
-  };
-
-  return {
-    items,
-    isLoading: query.isLoading,
-    isFetching: query.isFetching,
-    error: query.error as any,
-    unreadCount,
-    filterTab,
-    setFilterTab,
-    loadMore,
-    markOne,
-    markAll,
-    refetch: query.refetch,
-  };
-}
-
-// ============================================================================
-// ADMIN UNREAD COUNT HOOK
-// ============================================================================
-
-/**
- * Hook for fetching admin unread notification count
- * Only works for admin/super_admin roles
- */
-export function useAdminUnreadCount() {
-  const { user, profile } = useAuth() as any;
-  const qc = useQueryClient();
-
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
-
-  const query = useQuery({
-    queryKey: ['admin-unread-count', user?.id],
-    enabled: !!user?.id && isAdmin,
-    queryFn: getAdminUnreadCount,
-    staleTime: 30_000,
-    refetchOnWindowFocus: true,
-    refetchInterval: 60_000,
-  });
-
-  // Subscribe to realtime updates
-  const subRef = useRef<any>(null);
-  useEffect(() => {
-    if (!user || !isAdmin) return;
-
-    subRef.current = subscribeAdminNotifications(user.id, () => {
-      qc.invalidateQueries({ queryKey: ['admin-unread-count', user.id] });
-    });
-
-    return () => {
-      if (subRef.current) {
-        supabase.removeChannel(subRef.current);
-      }
-    };
-  }, [user?.id, isAdmin, qc]);
 
   return {
     count: query.data || 0,

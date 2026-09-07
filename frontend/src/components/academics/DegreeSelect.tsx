@@ -12,7 +12,8 @@ type Props = {
 };
 
 export default function DegreeSelect({ value, onChange, disabled, required, label = 'Degree', id, error }: Props) {
-  const inputId = id || useId();
+  const generatedId = useId();
+  const inputId = id || generatedId;
   const { degrees, loading, error: loadError } = useAcademicsCatalog();
 
   const isDisabled = disabled || loading;

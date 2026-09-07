@@ -73,13 +73,8 @@ export interface Notification {
   is_read: boolean;
   read_at?: string | null;
   created_at: string;
-}
-
-export interface AdminNotification extends Notification {
-  severity?: 'critical' | 'warning' | 'info';
-  entity_type?: string;
-  entity_id?: string;
-  action_required?: boolean;
+  sender_id?: string | null;
+  event_id?: string | null;
 }
 
 // View-backed type is the same shape exposed by bell_notifications
@@ -112,11 +107,26 @@ export function sanitizeNotificationLink(link?: string | null): string | null {
  * Derives a safe internal link from notification metadata
  * Used as fallback when link field is not set
  */
-export function deriveNotificationLink(notification: Notification): string | null {
+export function deriveNotificationLink(
+  notification: Notification,
+  userRole?: string
+): string | null {
   const { type, metadata } = notification;
-  
+
   if (!metadata) return null;
-  
+
+  // Message / chat routing — GAP 6 FIX
+  // Route to the messages page, optionally with a thread ID if available.
+  if (type === 'message') {
+    if (metadata.thread_id) {
+      return `/messages?thread=${metadata.thread_id}`;
+    }
+    if (metadata.entity_id) {
+      return `/messages?thread=${metadata.entity_id}`;
+    }
+    return '/messages';
+  }
+
   // Mentorship-specific routing
   if (type === 'mentorship' || type?.startsWith('mentorship_')) {
     const originalType = metadata.original_type || type;
@@ -176,12 +186,21 @@ export function deriveNotificationLink(notification: Notification): string | nul
       case 'profile': {
         // Only allow UUID-looking IDs to prevent routing tricks
         const uuidPattern = /^[0-9a-fA-F-]{36}$/;
-        if (uuidPattern.test(id)) {
-          // Admin-only route for reviewing mentor profiles
+        if (!uuidPattern.test(id)) {
+          return null;
+        }
+        // GAP 7 FIX: Route non-admins to their own profile, not the admin page.
+        // Admins/super_admins get the admin user-management route for reviewing
+        // mentor profiles. Non-admins who receive a profile notification (e.g.
+        // "your profile was reviewed") are routed to their own profile page.
+        const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+        if (isAdmin) {
           const tab = metadata.tab || 'mentorship';
           return `/admin/users/${id}?tab=${encodeURIComponent(tab)}`;
         }
-        return null;
+        // Non-admin: if the entity_id matches the current user, go to own profile.
+        // Otherwise, go to the public profile page (gated by view:alumni_directory).
+        return `/profile/${id}`;
       }
       default:
         return null;
@@ -195,13 +214,16 @@ export function deriveNotificationLink(notification: Notification): string | nul
  * Gets the final safe link for a notification
  * Prioritizes sanitized link field, then derived link, then fallback
  */
-export function getNotificationLink(notification: Notification): string {
+export function getNotificationLink(
+  notification: Notification,
+  userRole?: string
+): string {
   const sanitized = sanitizeNotificationLink(notification.link);
   if (sanitized) return sanitized;
-  
-  const derived = deriveNotificationLink(notification);
+
+  const derived = deriveNotificationLink(notification, userRole);
   if (derived) return derived;
-  
+
   return '#'; // Safe fallback
 }
 
@@ -223,7 +245,7 @@ export interface FetchNotificationsOptions {
  * RPC enforces recipient_id = auth.uid() and uses is_bell_visible index
  */
 export async function fetchNotifications(options: FetchNotificationsOptions = {}) {
-  const { limit = 12, offset = 0, unreadOnly, readOnly } = options;
+  const { limit = 50, offset = 0, unreadOnly, readOnly } = options;
   
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user;
@@ -236,7 +258,7 @@ export async function fetchNotifications(options: FetchNotificationsOptions = {}
 
   // Call RPC with limit capped at 12 per spec and optional is_read filter
   const { data, error } = await supabase.rpc('get_notifications_paginated', {
-    p_limit: Math.min(limit, 12),
+    p_limit: Math.min(limit, 50),
     p_offset: offset,
     p_is_read
   });
@@ -302,96 +324,13 @@ export function subscribeMyNotifications(
     .channel(`notifications:${userId}`)
     .on(
       'postgres_changes',
-      { 
-        event: '*', 
-        schema: 'public', 
-        table: 'notifications', 
-        filter: `recipient_id=eq.${userId}` 
+      {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `recipient_id=eq.${userId}`
       },
       onChange
-    )
-    .subscribe();
-}
-
-// ============================================================================
-// ADMIN NOTIFICATIONS API
-// ============================================================================
-
-export interface FetchAdminNotificationsOptions {
-  limit?: number;
-  offset?: number;
-  severity?: 'critical' | 'warning' | 'info';
-  unreadOnly?: boolean;
-}
-
-/**
- * Fetches admin notifications from admin_bell_notifications view
- * Only accessible to admin/super_admin roles
- */
-export async function fetchAdminNotifications(options: FetchAdminNotificationsOptions = {}) {
-  const { limit = 12, offset = 0, severity, unreadOnly = false } = options;
-  
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user;
-  if (!user) throw new Error('Not authenticated');
-
-  let query = supabase
-    .from('admin_bell_notifications')
-    .select('*')
-    .eq('recipient_id', user.id)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-  
-  if (severity) {
-    query = query.eq('severity', severity);
-  }
-  
-  if (unreadOnly) {
-    query = query.eq('is_read', false);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  
-  return (data || []) as AdminNotification[];
-}
-
-/**
- * Gets unread admin notification count for current admin user
- */
-export async function getAdminUnreadCount(): Promise<number> {
-  const { data, error } = await supabase.rpc('get_admin_unread_count');
-  if (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error fetching admin unread count:', error);
-    return 0;
-  }
-  return data || 0;
-}
-
-/**
- * Subscribes to real-time admin notification changes
- */
-export function subscribeAdminNotifications(
-  userId: string,
-  onChange: (payload: any) => void
-) {
-  return supabase
-    .channel(`admin-notifications:${userId}`)
-    .on(
-      'postgres_changes',
-      { 
-        event: '*', 
-        schema: 'public', 
-        table: 'notifications', 
-        filter: `recipient_id=eq.${userId}` 
-      },
-      (payload: any) => {
-        // Only trigger for admin-audience notifications
-        if (payload.new && (payload.new as any).metadata?.audience === 'admin') {
-          onChange(payload);
-        }
-      }
     )
     .subscribe();
 }

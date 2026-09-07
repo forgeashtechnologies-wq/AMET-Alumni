@@ -11,6 +11,7 @@ export default function JobDetailsQuickLink({ job, viewerRole, isOwner, onChange
 
   const disableJob = async () => {
     const { error } = await supabase.from('jobs').update({ is_active: false }).eq('id', job.id);
+    // eslint-disable-next-line no-console
     if (error) console.error('Disable failed', error);
     onChanged?.();
   };

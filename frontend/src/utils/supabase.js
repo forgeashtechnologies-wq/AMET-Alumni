@@ -131,20 +131,68 @@ export function ensureChannelSubscribed(name) {
 /**
  * Idempotently attach a postgres_changes listener to a channel.
  * key should uniquely describe this listener (e.g., `${event}:${schema}:${table}:${filter}`).
+ *
+ * IMPORTANT: Supabase Realtime does NOT allow .on('postgres_changes') after
+ * .subscribe() has been called on a channel. This function ensures .on() is
+ * always called BEFORE .subscribe(). If a new listener is added to an already-
+ * subscribed channel, the channel is rebuilt from scratch (removed, recreated,
+ * all listeners re-attached, then re-subscribed).
  */
 export function onPostgresChangesOnce(channelName, key, params, handler) {
-  const channel = ensureChannelSubscribed(channelName);
+  // 1. Get or create the channel WITHOUT subscribing yet
+  getOrCreateChannel(channelName); // ensures registry entry exists, increments refCount
   const entry = _channelRegistry[channelName];
   if (!entry.listeners) entry.listeners = new Set();
+  if (!entry.listenerSpecs) entry.listenerSpecs = [];
+
   if (!entry.listeners.has(key)) {
+    // 2. If the channel is already subscribed, we must rebuild it because
+    //    Supabase forbids adding postgres_changes callbacks after subscribe()
+    if (entry.hasSubscribeCall) {
+      try { supabase.removeChannel(entry.channel); } catch (_) { void 0; }
+      entry.channel = supabase.channel(channelName);
+      entry.hasSubscribeCall = false;
+      entry.subscribed = false;
+      // Re-attach all previously-registered listeners to the fresh channel
+      for (const spec of entry.listenerSpecs) {
+        entry.channel.on('postgres_changes', spec.params, spec.handler);
+      }
+    }
+    // 3. Attach the new listener BEFORE subscribe
     entry.listeners.add(key);
-    channel.on('postgres_changes', params, handler);
+    entry.listenerSpecs.push({ key, params, handler });
+    entry.channel.on('postgres_changes', params, handler);
   }
+
+  // 4. NOW subscribe — after all .on() listeners are attached
+  if (!entry.hasSubscribeCall) {
+    entry.hasSubscribeCall = true;
+    try {
+      entry.channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          logger.info(`Realtime ready for ${channelName}`);
+          entry.subscribed = true;
+          try { if (typeof window !== 'undefined') { window.__sb_rt_ready__ = true; } } catch (_) { void 0; }
+        }
+      });
+    } catch (e) {
+      const msg = String(e?.message || e || '');
+      if (!msg.toLowerCase().includes('subscribe') || !msg.toLowerCase().includes('only be called a single time')) {
+        logger.error(`Failed subscribing to channel ${channelName}: ${String(e?.message || e)}`);
+      }
+    }
+  }
+
   // return disposer that decrements refcount and removes channel when unused
   return () => {
     const e = _channelRegistry[channelName];
     if (!e) return;
-    if (e.listeners && e.listeners.has(key)) e.listeners.delete(key);
+    if (e.listeners && e.listeners.has(key)) {
+      e.listeners.delete(key);
+      if (e.listenerSpecs) {
+        e.listenerSpecs = e.listenerSpecs.filter(s => s.key !== key);
+      }
+    }
     e.refCount = Math.max(0, (e.refCount || 0) - 1);
     if (e.refCount === 0) {
       try { supabase.removeChannel(e.channel); } catch (_) { void 0; }

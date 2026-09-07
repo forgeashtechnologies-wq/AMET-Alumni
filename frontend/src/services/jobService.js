@@ -506,7 +506,12 @@ export async function fetchAlertPerformanceStats(userId) {
       0
     );
 
-    return { success: true, jobsThisWeek: totalJobsThisWeek, stats: data || [] };
+    const totalMatches = (data || []).reduce(
+      (sum, row) => sum + (Number(row.total_matches) || 0),
+      0
+    );
+
+    return { success: true, jobsThisWeek: totalJobsThisWeek, totalMatches, stats: data || [] };
   } catch (err) {
     logger.error('fetchAlertPerformanceStats exception:', err);
     return { success: false, error: mapJobError(err) };

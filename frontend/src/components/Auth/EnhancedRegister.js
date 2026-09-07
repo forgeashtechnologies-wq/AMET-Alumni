@@ -15,18 +15,22 @@ import { validatePassword } from '../../utils/passwordPolicy';
 import DegreeSelect from '../academics/DegreeSelect';
 import DepartmentSelect from '../academics/DepartmentSelect';
 import { useAcademicsCatalog } from '../../hooks/useAcademicsCatalog';
-import { 
-  validateBatchYear, 
-  getBatchYearLabel, 
+import {
+  validateBatchYear,
+  getBatchYearLabel,
   getBatchYearPlaceholder,
-  getProfileYearWriteFields 
+  getProfileYearWriteFields
 } from '../../utils/batchYear';
+import { QRCodeSVG } from 'qrcode.react';
 
 const EnhancedRegister = () => {
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
   const BANNER_DURATION_MS = 2500;                // 2–3s
   const REDIRECT_AFTER_REGISTER = '/';            // change to '/home' if you want
+  // Dynamic registration URL — adapts to whatever host the app is served from
+  // (http://localhost:3000/register in dev, https://yourdomain.com/register in prod)
+  const registrationUrl = `${window.location.origin}/register`;
   const [showCompletionBanner, setShowCompletionBanner] = useState(false);
   
   // Shared academics catalog (degrees + grouped departments)
@@ -1370,12 +1374,13 @@ const EnhancedRegister = () => {
         {/* QR quick access */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="h-14 w-14 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              <img
-                src="/QR.png"
-                alt="Scan to register"
-                className="h-full w-full object-contain"
-                loading="lazy"
+            <div className="h-14 w-14 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm p-1">
+              <QRCodeSVG
+                value={registrationUrl}
+                size={48}
+                level="M"
+                includeMargin={false}
+                aria-label="Scan to register"
               />
             </div>
             <div className="space-y-1">
@@ -1535,14 +1540,21 @@ const EnhancedRegister = () => {
             </button>
             <h3 className="text-lg font-semibold text-gray-900 mb-3 text-center">Scan to Register</h3>
             <div className="flex justify-center">
-              <img
-                src="/QR.png"
-                alt="Scan to register"
-                className="w-72 h-72 object-contain"
-              />
+              <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                <QRCodeSVG
+                  value={registrationUrl}
+                  size={256}
+                  level="M"
+                  includeMargin={false}
+                  aria-label="Scan to register"
+                />
+              </div>
             </div>
             <p className="mt-3 text-center text-sm text-gray-600">
               Point your camera at the code to open this registration page on your device.
+            </p>
+            <p className="mt-1 text-center text-xs text-gray-400 break-all">
+              {registrationUrl}
             </p>
           </div>
         </div>

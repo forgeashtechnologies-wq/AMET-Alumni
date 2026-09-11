@@ -375,33 +375,40 @@ export async function updateJobAlert(alertId, alertData) {
       return { success: false, error: 'Alert ID is required' };
     }
 
-    // Only send fields that are actually present in alertData.
-    // The RPC uses COALESCE to preserve fields when NULL is passed,
-    // but we also avoid sending null for fields the caller didn't intend to change.
+    // Send fields that are present in alertData.
+    // The RPC uses COALESCE to preserve fields when NULL is passed.
+    // To CLEAR a filter (set back to "Any"), we send sentinel values:
+    //   - '__clear__' for text/text[] fields (job_type, experience_level, location, keywords)
+    //   - -1 for integer fields (min_salary, max_salary)
+    // NULL means "don't change this field" (field not included in alertData).
     const params = { p_id: alertId };
 
     if (alertData.alert_name !== undefined) {
       params.p_alert_name = sanitizeText(alertData.alert_name);
     }
     if (alertData.keywords !== undefined) {
-      params.p_keywords = Array.isArray(alertData.keywords)
-        ? alertData.keywords.map(k => sanitizeText(k)).filter(Boolean)
-        : null;
+      if (alertData.keywords === null || (Array.isArray(alertData.keywords) && alertData.keywords.length === 0)) {
+        params.p_keywords = ['__clear__'];
+      } else {
+        params.p_keywords = Array.isArray(alertData.keywords)
+          ? alertData.keywords.map(k => sanitizeText(k)).filter(Boolean)
+          : null;
+      }
     }
     if (alertData.location !== undefined) {
-      params.p_location = alertData.location ? sanitizeText(alertData.location) : null;
+      params.p_location = alertData.location ? sanitizeText(alertData.location) : '__clear__';
     }
     if (alertData.job_type !== undefined) {
-      params.p_job_type = alertData.job_type || null;
+      params.p_job_type = alertData.job_type || '__clear__';
     }
     if (alertData.experience_level !== undefined) {
-      params.p_experience_level = alertData.experience_level || null;
+      params.p_experience_level = alertData.experience_level || '__clear__';
     }
     if (alertData.min_salary !== undefined) {
-      params.p_min_salary = alertData.min_salary ? parseInt(alertData.min_salary, 10) : null;
+      params.p_min_salary = alertData.min_salary ? parseInt(alertData.min_salary, 10) : -1;
     }
     if (alertData.max_salary !== undefined) {
-      params.p_max_salary = alertData.max_salary ? parseInt(alertData.max_salary, 10) : null;
+      params.p_max_salary = alertData.max_salary ? parseInt(alertData.max_salary, 10) : -1;
     }
     if (alertData.frequency !== undefined) {
       params.p_frequency = alertData.frequency || null;

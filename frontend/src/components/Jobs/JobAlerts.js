@@ -189,11 +189,11 @@ const JobAlerts = () => {
       alert_name: alertName,
       keywords: keywordsArr,
       location: formData.location || '',
-      // Only include non-null values
-      ...(job_type ? { job_type } : {}),
-      ...(experience_level ? { experience_level } : {}),
-      ...(min_salary_num !== null ? { min_salary: min_salary_num } : {}),
-      ...(max_salary_num !== null ? { max_salary: max_salary_num } : {}),
+      // Always include filter fields so they can be cleared (sent to RPC as __clear__ sentinel)
+      job_type,
+      experience_level,
+      min_salary: min_salary_num,
+      max_salary: max_salary_num,
       ...(frequency ? { frequency } : {}),
       is_active: formData.is_active === undefined ? true : Boolean(formData.is_active),
     };
@@ -439,25 +439,25 @@ const JobAlerts = () => {
                         <div className="flex items-center">
                           <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 mr-2" />
                           <span className="text-gray-600">Keywords:</span>
-                          <span className="ml-1 font-medium">{Array.isArray(alert.keywords) ? alert.keywords.join(', ') : ''}</span>
+                          <span className="ml-1 font-medium">{Array.isArray(alert.keywords) && alert.keywords.length > 0 ? alert.keywords.join(', ') : 'Any'}</span>
                         </div>
-                        
+
                         <div className="flex items-center">
                           <MapPinIcon className="w-4 h-4 text-gray-400 mr-2" />
                           <span className="text-gray-600">Location:</span>
-                          <span className="ml-1 font-medium">{alert.location}</span>
+                          <span className="ml-1 font-medium">{alert.location || 'Any'}</span>
                         </div>
-                        
+
                         <div className="flex items-center">
                           <BriefcaseIcon className="w-4 h-4 text-gray-400 mr-2" />
                           <span className="text-gray-600">Type:</span>
-                          <span className="ml-1 font-medium">{alert.job_type}</span>
+                          <span className="ml-1 font-medium">{alert.job_type || 'Any'}</span>
                         </div>
-                        
+
                         <div className="flex items-center">
                           <ClockIcon className="w-4 h-4 text-gray-400 mr-2" />
                           <span className="text-gray-600">Experience:</span>
-                          <span className="ml-1 font-medium">{alert.experience_level}</span>
+                          <span className="ml-1 font-medium">{alert.experience_level || 'Any'}</span>
                         </div>
                       </div>
 
